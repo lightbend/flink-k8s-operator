@@ -5,6 +5,7 @@ image:
   pullPolicy: IfNotPresent
 env:
   namespace: ""                # empty string represents the same ns as the operator's, use * for all
+  crd: true                    # if false, the operator will watch on ConfigMaps
   reconciliationInterval: 180  # how often (in seconds) the full reconciliation should be run
   metrics: true                # should we expose metrics for Prometheus?
   metricsPort: 8080            # port for the metrics http server
