@@ -1,0 +1,15 @@
+Once the operator is up and running, you can simply create Spark clusters by
+
+# create cluster
+cat <<EOF | kubectl create -f -
+apiVersion: lightbend.com/v1
+kind: FlinkCluster
+metadata:
+  name: my-cluster
+spec:
+  flinkConfiguration:
+    num_taskmanagers: "2"
+    taskmanagers_slots: "2"
+EOF
+
+For more details consult https://github.com/radanalyticsio/spark-operator/blob/master/README.md

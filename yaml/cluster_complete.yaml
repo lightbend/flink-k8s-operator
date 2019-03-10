@@ -1,0 +1,22 @@
+apiVersion: lightbend.com/v1
+kind: FlinkCluster
+metadata:
+  name: my-flink-cluster
+spec:
+  metrics : true
+  customImage : myimage
+  labels:
+    common-label-for-all-the-resources-operator-deploys/deployed-by: john
+    common-label-to-be-replaced-on-some-resources: global-value
+  env:
+  - name: ENV1
+    value: env1
+  flinkConfiguration:
+    num_taskmanagers: "2"
+    taskmanagers_slots: "2"
+  worker:
+    cpu: "2"
+  master:
+    inputs:
+    - input1
+    - input2

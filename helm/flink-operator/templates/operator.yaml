@@ -1,0 +1,65 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flink-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: flink-operator-edit-resources
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: ""
+subjects:
+  - kind: ServiceAccount
+    name: flink-operator
+    namespace: "{{ .Release.Namespace }}"
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: flink-operator
+  labels: &default-labels
+    app.kubernetes.io/name: flink-operator
+    app.kubernetes.io/version: {{ .Values.version }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:  *default-labels
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels: *default-labels
+      initializers:
+        pending: []  
+    spec:
+      serviceAccountName: flink-operator
+      containers:
+      - name: flink-operator
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        env:
+        - name: WATCH_NAMESPACE
+          value: "{{ .Values.env.namespace }}"
+        - name: FULL_RECONCILIATION_INTERVAL_S
+          value: "{{ .Values.env.reconciliationInterval }}"
+        - name: CRD
+          value: "{{ .Values.env.crd }}"
+        - name: METRICS
+          value: "{{ .Values.env.metrics }}"
+        - name: METRICS_PORT
+          value: "{{ .Values.env.metricsPort }}"
+        - name: METRICS_JVM
+          value: "{{ .Values.env.internalJvmMetrics }}"
+        - name: COLORS
+          value: "{{ .Values.env.colors }}"
+        resources:
+          limits:
+            memory: {{ .Values.resources.memory }}
+            cpu: {{ .Values.resources.cpu }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+

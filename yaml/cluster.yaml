@@ -1,0 +1,4 @@
+apiVersion: lightbend.com/v1
+kind: FlinkCluster
+metadata:
+  name: my-flink-cluster
