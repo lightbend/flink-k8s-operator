@@ -5,7 +5,7 @@ import scala.collection.JavaConverters._
 
 object Constants {
 
-  val DEFAULT_FLINK_IMAGE = "lightbend/flink:1.7.2-scala_2.11:2.0.0"
+  val DEFAULT_FLINK_IMAGE = "lightbend/flink:1.7.2-scala_2.11"
   val DEFAULT_TASKMANGER_MEMORY = "2048"
   val DEFAULT_JOBMANAGER_MEMORY = "1024"
   val DEFAULT_TASKMANGER_CPU = "4"

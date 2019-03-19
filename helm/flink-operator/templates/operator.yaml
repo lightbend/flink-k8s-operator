@@ -48,7 +48,7 @@ spec:
         - name: FULL_RECONCILIATION_INTERVAL_S
           value: "{{ .Values.env.reconciliationInterval }}"
         - name: CRD
-          value: "{{ .Values.env.crd }}"
+          value: "true"
         - name: METRICS
           value: "{{ .Values.env.metrics }}"
         - name: METRICS_PORT

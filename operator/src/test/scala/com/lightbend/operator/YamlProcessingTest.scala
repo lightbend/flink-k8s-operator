@@ -8,7 +8,7 @@ import scala.collection.JavaConverters._
 
 class YamlProcessingTest extends TestCase{
 
-  private val file1 = "./../yaml/cluster.yaml"
+  private val file1 = "./yaml/cluster.yaml"
   private val client = new DefaultKubernetesClient
 
   @Test

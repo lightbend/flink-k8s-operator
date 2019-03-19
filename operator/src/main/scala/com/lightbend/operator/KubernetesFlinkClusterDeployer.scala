@@ -1,20 +1,23 @@
 package com.lightbend.operator
 
 import scala.collection.mutable.ListBuffer
-
 import io.fabric8.kubernetes.api.model._
 import io.fabric8.kubernetes.client.KubernetesClient
 import com.lightbend.operator.types.FlinkCluster
 import io.radanalytics.operator.resource.LabelsHelper._
 
 import scala.collection.JavaConverters._
-
 import Constants._
+import org.slf4j.LoggerFactory
 
 class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: String, prefix: String, namespace: String) {
 
+  private val log = LoggerFactory.getLogger(classOf[KubernetesFlinkClusterDeployer].getName)
+  log.info(s"Creating KubernetesFlinkClusterDeployer for the entity name $entityName, prefix$prefix, namespace $namespace")
+
   def getResourceList(cluster: FlinkCluster): KubernetesResourceList[_ <: HasMetadata] = client.synchronized {
 
+    log.info(s"Creating resource list for cluster ${cluster.getName} in namespace $namespace")
     val params = getFlinkParameters(cluster)
     val masterRc = getRCforMaster(cluster, params, namespace)
     val workerRc = getRCforWorker(cluster, params, namespace)
@@ -78,8 +81,8 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
       .build()
 
     // Limits
-    val limits = Map(("cpu" -> new QuantityBuilder().withAmount(params.master_cpu).build()),
-      ("memory" -> new QuantityBuilder().withAmount(params.master_memory).build()))
+    val limits = Map(("cpu" -> new QuantityBuilder().withAmount(s"${params.master_cpu}000m").build()),
+      ("memory" -> new QuantityBuilder().withAmount(s"${params.master_memory}Mi").build()))
 
     // Container
     val containerBuilder = new ContainerBuilder()
@@ -149,8 +152,8 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
     val args = List(OPERATOR_TYPE_WORKER_LABEL)
 
     // Limits
-    val limits = Map(("cpu" -> new QuantityBuilder().withAmount(params.worker_cpu).build()),
-      ("memory" -> new QuantityBuilder().withAmount(params.worker_memory).build()))
+    val limits = Map(("cpu" -> new QuantityBuilder().withAmount(s"${params.worker_cpu}000m").build()),
+      ("memory" -> new QuantityBuilder().withAmount(s"${params.worker_memory}Mi").build()))
 
 
     // Container
@@ -209,6 +212,6 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
   }
 
   def getDefaultLabels(name: String): Map[String, String] = {
-    Map((s"$prefix.$OPERATOR_KIND_LABEL" -> entityName),(s"$prefix.$entityName", name))
+    Map((s"$prefix$OPERATOR_KIND_LABEL" -> entityName),(s"$prefix$entityName", name))
   }
 }
