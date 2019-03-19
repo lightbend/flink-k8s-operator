@@ -129,7 +129,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     // rescale
     desired.values.foreach(cluster => {
       val desiredWorkers = getFlinkParameters(cluster).worker_instances
-      val actualWorkers = actual.get(cluster.getName).get
+      val actualWorkers = actual.get(cluster.getName).getOrElse(0)
       if (desiredWorkers != actualWorkers) {
         change.set(true)
         rescaleCluster(cluster)
@@ -142,7 +142,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
       desired.values.foreach(cluster => clusters.get.put(cluster))
     }
 
-    // LOg result
+    // Log result
     if (!change.get)
       log.info("no change was detected during the reconciliation")
     MetricsHelper.reconciliationsTotal.labels(namespace).inc()
@@ -165,7 +165,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
   private def rescaleCluster(newCluster: FlinkCluster) : Unit = {
     val newWorkers = getFlinkParameters(newCluster).worker_instances
     log.info(s"Cluster ${newCluster.getName} scaling to $newWorkers taskmanagers")
-    client.replicationControllers.inNamespace(namespace).withName(s"${newCluster.getName}-w").scale(newWorkers)
+    client.replicationControllers.inNamespace(namespace).withName(s"${newCluster.getName}-taskmanager").scale(newWorkers)
     clusters.get.update(newCluster)
   }
 
