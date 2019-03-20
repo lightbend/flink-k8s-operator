@@ -8,7 +8,7 @@ env:
   reconciliationInterval: 180  # how often (in seconds) the full reconciliation should be run
   metrics: true                # should we expose metrics for Prometheus?
   metricsPort: 8080            # port for the metrics http server
-  internalJvmMetrics: false    # should we expose also internal JVM metrics?
+  internalJvmMetrics: true     # should we expose also internal JVM metrics?
 resources:
   memory: 512Mi
   cpu: 1000m

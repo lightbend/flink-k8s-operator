@@ -183,7 +183,7 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
         .withNamespace(namespace)
       .endMetadata
       .withNewSpec
-        .withReplicas(1)
+        .withReplicas(params.worker_instances)
         .withNewTemplate
           .withNewMetadata
             .withAnnotations(annotations.asJava)
