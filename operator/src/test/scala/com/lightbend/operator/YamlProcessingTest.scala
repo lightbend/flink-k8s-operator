@@ -17,8 +17,8 @@ class YamlProcessingTest extends TestCase{
     val crd = client.customResourceDefinitions().load(file1).get()
     val cluster = DataHelper.fromCRD(crd)
     println(cluster)
-    val deployer = new KubernetesFlinkClusterDeployer(client, "FlinkCluster", "lightbend.com", "namespace")
-    val resources = deployer.getResourceList(cluster)
+    val deployer = new KubernetesFlinkClusterDeployer(client, "FlinkCluster", "lightbend.com")
+    val resources = deployer.getResourceList(cluster, "namespace")
     resources.getItems.asScala.foreach(resource =>
       println(resource))
   }

@@ -18,7 +18,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
 
   // Those can not created here because namespace is initiated later
   private var clusters : Option[RunningClusters] = Option.empty
-  private var deployer : Option[KubernetesFlinkClusterDeployer] = Option.empty
+  private val deployer = new KubernetesFlinkClusterDeployer(client, entityName, prefix)
 
   // Init - initialize logger
   override protected def onInit(): Unit = {
@@ -28,33 +28,27 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
   // Add event, just deploy a new cluster
   override def onAdd(cluster: FlinkCluster): Unit = {
     log.info(s"Flink operator processing add event for a cluster ${cluster.getName}")
-    setDeployer
-    setClusters
-    val list =deployer.get.getResourceList(cluster)
+    val list =deployer.getResourceList(cluster, namespace)
     client.resourceList(list).inNamespace(namespace).createOrReplace
-    clusters.get.put(cluster)
+    getClusters().put(cluster)
   }
 
   // Delete event, just delete cluster
   override def onDelete(cluster: FlinkCluster): Unit = {
     log.info(s"Flink operator processing delete event for a cluster ${cluster.getName}")
-    setDeployer
-    setClusters
     val name = cluster.getName
-    client.services.inNamespace(namespace).withLabels(deployer.get.getDefaultLabels(name).asJava).delete
-    client.replicationControllers.inNamespace(namespace).withLabels(deployer.get.getDefaultLabels(name).asJava).delete
-    client.pods.inNamespace(namespace).withLabels(deployer.get.getDefaultLabels(name).asJava).delete
-    clusters.get.delete(name)
+    client.services.inNamespace(namespace).withLabels(deployer.getDefaultLabels(name).asJava).delete
+    client.replicationControllers.inNamespace(namespace).withLabels(deployer.getDefaultLabels(name).asJava).delete
+    client.pods.inNamespace(namespace).withLabels(deployer.getDefaultLabels(name).asJava).delete
+    getClusters().delete(name)
   }
 
   // Modify event
   override protected def onModify(newCluster: FlinkCluster): Unit = {
     log.info(s"Flink operator processing modify event for a cluster ${newCluster.getName}")
-    setDeployer
-    setClusters
     val name = newCluster.getName
     // Verify that cluster exists
-    val existingCluster = clusters.get.getCluster(name)
+    val existingCluster = getClusters().getCluster(name)
     if (null == existingCluster) {
       log.error(s"something went wrong, unable to scale existing cluster $name. Perhaps it wasn't deployed properly.")
       return
@@ -68,9 +62,9 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     // Recreate cluster with new parameters
     else {
       log.info(s"Recreating cluster  $name")
-      val list = deployer.get.getResourceList(newCluster)
+      val list = deployer.getResourceList(newCluster, namespace)
       client.resourceList(list).inNamespace(namespace).createOrReplace
-      clusters.get.update(newCluster)
+      getClusters().update(newCluster)
     }
   }
 
@@ -87,8 +81,6 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     }
     log.info(s"Running full reconciliation for namespace $namespace and kind $entityName..")
 
-    setDeployer
-    setClusters
     val change: AtomicBoolean = new AtomicBoolean(false)
     // Get desired clusters
     val desired = super.getDesiredSet.asScala.map(cluster => (cluster.getName -> cluster)).toMap
@@ -138,8 +130,9 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
 
     // first reconciliation after (re)start -> update the clusters instance
     if (!fullReconciliationRun) {
-      clusters.get.resetMetrics()
-      desired.values.foreach(cluster => clusters.get.put(cluster))
+      val clust = getClusters()
+      clust.resetMetrics()
+      desired.values.foreach(cluster => clust.put(cluster))
     }
 
     // Log result
@@ -166,7 +159,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     val newWorkers = getFlinkParameters(newCluster).worker_instances
     log.info(s"Cluster ${newCluster.getName} scaling to $newWorkers taskmanagers")
     client.replicationControllers.inNamespace(namespace).withName(s"${newCluster.getName}-taskmanager").scale(newWorkers)
-    clusters.get.update(newCluster)
+    getClusters().update(newCluster)
   }
 
   /**
@@ -187,14 +180,12 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     oldC == newC
   }
 
-  // Ensure that both deployer and clusters map are created
-  private def setDeployer: Unit = deployer match {
-    case Some(d) => // already exists
-    case _ => deployer = Some(new KubernetesFlinkClusterDeployer(client, entityName, prefix, namespace))
-  }
-
-  private def setClusters: Unit = clusters match {
-    case Some(c) => // already exists
-    case _ => clusters = Some(new RunningClusters(namespace))
-  }
+  private def getClusters(): RunningClusters =
+    clusters match {
+      case Some(c) => c  // already exists
+      case _ =>
+        val c = new RunningClusters(namespace)
+        clusters = Some(c)
+        c
+    }
 }

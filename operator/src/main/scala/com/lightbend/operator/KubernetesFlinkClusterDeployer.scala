@@ -10,12 +10,12 @@ import scala.collection.JavaConverters._
 import Constants._
 import org.slf4j.LoggerFactory
 
-class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: String, prefix: String, namespace: String) {
+class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: String, prefix: String) {
 
   private val log = LoggerFactory.getLogger(classOf[KubernetesFlinkClusterDeployer].getName)
-  log.info(s"Creating KubernetesFlinkClusterDeployer for the entity name $entityName, prefix$prefix, namespace $namespace")
+  log.info(s"Creating KubernetesFlinkClusterDeployer for the entity name $entityName, prefix$prefix")
 
-  def getResourceList(cluster: FlinkCluster): KubernetesResourceList[_ <: HasMetadata] = client.synchronized {
+  def getResourceList(cluster: FlinkCluster, namespace: String): KubernetesResourceList[_ <: HasMetadata] = client.synchronized {
 
     log.info(s"Creating resource list for cluster ${cluster.getName} in namespace $namespace")
     val params = getFlinkParameters(cluster)
