@@ -8,6 +8,7 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   name: flink-operator-edit-resources
+  namespace: default
 roleRef:
   kind: ClusterRole
   name: cluster-admin
@@ -32,6 +33,9 @@ spec:
     type: Recreate
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: "{{ .Values.env.metricsPort }}"
       labels: *default-labels
     spec:
       serviceAccountName: flink-operator
@@ -48,5 +52,5 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "1000m"
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
 

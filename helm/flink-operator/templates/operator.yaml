@@ -34,9 +34,11 @@ spec:
     type: Recreate
   template:
     metadata:
+      {{- if .Values.env.metrics }}
       annotations:
         prometheus.io/scrape: 'true'
         prometheus.io/port: "{{ .Values.env.metricsPort }}"
+      {{- end }}
       labels: *default-labels
       initializers:
         pending: []  
