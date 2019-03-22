@@ -58,6 +58,8 @@ EOF
 ````
 Additional parameters can be added. See [example](yaml/cluster_complete.yaml)
 
+##Seeing what is running
+
 To see running clusters run 
 ````
 oc get FlinkCluster
@@ -128,6 +130,8 @@ To delete the cluster run the following:
 oc delete FlinkCluster my-cluster
 ````
 
+**Note** *The above CRD commands are not global, They only show the resources in a namespace that you are in.* 
+
 ##Metrics
 Prometheus support is enabled via Helm chart
 To see all available metrics, go to Prometheus console/graph and enter the following query
@@ -136,6 +140,3 @@ To see all available metrics, go to Prometheus console/graph and enter the follo
 ````
 This will return the list of all metrics produced by the operator.
 You should also be able to see operator and created clusters in the lightbend console
-
-
-None limitation: 2 clusters with the same name can be created in 2 different namespaces, 
