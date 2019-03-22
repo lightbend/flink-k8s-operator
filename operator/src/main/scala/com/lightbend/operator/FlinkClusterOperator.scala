@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import Constants._
 import io.radanalytics.operator.resource.LabelsHelper._
 
+import scala.collection.mutable.{Map => MMap}
 import scala.collection.JavaConverters._
 
 
@@ -17,8 +18,8 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
   private val log = LoggerFactory.getLogger(classOf[AbstractOperator[_ <: EntityInfo]].getName)
 
   // Those can not created here because namespace is initiated later
-  private var clusters : Option[RunningClusters] = Option.empty
-  private val deployer = new KubernetesFlinkClusterDeployer(client, entityName, prefix)
+  private val clusters = MMap[String, RunningClusters]()       // In order to support multiple namespaces (all namespace) we need map here, namespace cas change
+  private var deployer : Option[KubernetesFlinkClusterDeployer] = Option.empty
 
   // Init - initialize logger
   override protected def onInit(): Unit = {
@@ -27,25 +28,25 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
 
   // Add event, just deploy a new cluster
   override def onAdd(cluster: FlinkCluster): Unit = {
-    log.info(s"Flink operator processing add event for a cluster ${cluster.getName}")
-    val list =deployer.getResourceList(cluster, namespace)
+    log.info(s"Flink operator processing add event for a cluster ${cluster.getName} in namespace $namespace")
+    val list =getDeployer().getResourceList(cluster, namespace)
     client.resourceList(list).inNamespace(namespace).createOrReplace
     getClusters().put(cluster)
   }
 
   // Delete event, just delete cluster
   override def onDelete(cluster: FlinkCluster): Unit = {
-    log.info(s"Flink operator processing delete event for a cluster ${cluster.getName}")
+    log.info(s"Flink operator processing delete event for a cluster ${cluster.getName} in namespace $namespace")
     val name = cluster.getName
-    client.services.inNamespace(namespace).withLabels(deployer.getDefaultLabels(name).asJava).delete
-    client.replicationControllers.inNamespace(namespace).withLabels(deployer.getDefaultLabels(name).asJava).delete
-    client.pods.inNamespace(namespace).withLabels(deployer.getDefaultLabels(name).asJava).delete
+    client.services.inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name).asJava).delete
+    client.replicationControllers.inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name).asJava).delete
+    client.pods.inNamespace(namespace).withLabels(getDeployer().getDefaultLabels(name).asJava).delete
     getClusters().delete(name)
   }
 
   // Modify event
   override protected def onModify(newCluster: FlinkCluster): Unit = {
-    log.info(s"Flink operator processing modify event for a cluster ${newCluster.getName}")
+    log.info(s"Flink operator processing modify event for a cluster ${newCluster.getName} in namespace $namespace")
     val name = newCluster.getName
     // Verify that cluster exists
     val existingCluster = getClusters().getCluster(name)
@@ -62,7 +63,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     // Recreate cluster with new parameters
     else {
       log.info(s"Recreating cluster  $name")
-      val list = deployer.getResourceList(newCluster, namespace)
+      val list = getDeployer().getResourceList(newCluster, namespace)
       client.resourceList(list).inNamespace(namespace).createOrReplace
       getClusters().update(newCluster)
     }
@@ -106,7 +107,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
 
     // add new
     toBeCreated.foreach(cluster => {
-        log.info("creating cluster {}", cluster)
+        log.info(s"creating cluster $cluster")
         onAdd(desired.get(cluster).get)
      })
 
@@ -144,12 +145,12 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
   // Get amount of workers per cluster
   private def getActual: Map[String, Integer] = {
     // Get all replication controllers
-    val aux1 = client.replicationControllers
+    val controllers = client.replicationControllers()
     // Filter by namespace
-    val aux2 = if ("*" == namespace) aux1.inAnyNamespace else aux1.inNamespace(namespace)
+    val namespacedcontrollers = if ("*" == namespace) controllers.inAnyNamespace else controllers.inNamespace(namespace)
     // Get all task managers
     val labels = Map("server" -> "flink", "component" -> OPERATOR_TYPE_WORKER_LABEL, (prefix + OPERATOR_KIND_LABEL, entityName))
-    val workerRcs = aux2.withLabels(labels.asJava).list.getItems.asScala
+    val workerRcs = namespacedcontrollers.withLabels(labels.asJava).list.getItems.asScala
     // Get workers per name
     workerRcs.map(rc => rc.getMetadata.getLabels.get(prefix + entityName) -> rc.getSpec.getReplicas).toMap
   }
@@ -180,12 +181,19 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     oldC == newC
   }
 
-  private def getClusters(): RunningClusters =
-    clusters match {
-      case Some(c) => c  // already exists
-      case _ =>
-        val c = new RunningClusters(namespace)
-        clusters = Some(c)
-        c
-    }
+  private def getClusters(): RunningClusters = clusters.get(namespace) match {
+    case Some(c) => c  // already exists
+    case _ =>
+      val c = new RunningClusters(namespace)
+      clusters += (namespace -> c)
+      c
+  }
+
+  private def getDeployer(): KubernetesFlinkClusterDeployer = deployer match {
+    case Some(d) => d     // Already exists
+    case _ =>             // Create a new one
+      val d = new KubernetesFlinkClusterDeployer(client, entityName, prefix)
+      deployer = Option(d)
+      d
+  }
 }

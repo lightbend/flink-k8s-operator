@@ -7,6 +7,9 @@
     "existingJavaType": "io.radanalytics.operator.common.EntityInfo"
   },
   "properties": {
+    "namespace" : {
+      "type": "string"
+    },
     "master": {
       "$ref": "#/definitions/RCSpec"
     },
