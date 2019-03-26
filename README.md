@@ -10,7 +10,10 @@ THe operator has 2 participating projects:
 * model - json definition of the model and scala code to build java classes (the reason is that SBT does not have an equivalent to [jsonschema2pojo-maven-plugin](https://github.com/joelittlejohn/jsonschema2pojo) so it is implemented as a separate project)
 * operator - the actual implementation of the operator
 
-Build can be done running command:
+Before building you need to generate types by running [GenerateMOdel](model/src/main/scala/com/lightbend/operator/model/GenerateModel.scala)
+Then make sure that [generated classes](model/target/generated-sources/jsonschema2pojo) are included in your code sources
+
+NOw build can be done running command:
 ````
  sbt docker 
 ````

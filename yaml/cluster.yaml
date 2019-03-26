@@ -1,4 +1,5 @@
 apiVersion: lightbend.com/v1
 kind: FlinkCluster
 metadata:
+  namespace: nm
   name: my-flink-cluster

@@ -6,6 +6,8 @@ import com.lightbend.operator.types.FlinkCluster
 import io.radanalytics.operator.common.{AbstractOperator, EntityInfo, Operator}
 import org.slf4j.LoggerFactory
 import Constants._
+import com.fasterxml.jackson.databind.ObjectMapper
+import io.radanalytics.operator.common.crd.{InfoClass}
 import io.radanalytics.operator.resource.LabelsHelper._
 
 import scala.collection.mutable.{Map => MMap}
@@ -69,6 +71,17 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     }
   }
 
+  override protected def convertCr (info : InfoClass[_]): FlinkCluster = {
+    log.info(s"Converting new resource - source $info")
+    val name = info.getMetadata.getName
+    val namespace = info.getMetadata.getNamespace
+    val mapper = new ObjectMapper
+    var infoSpec = mapper.convertValue(info.getSpec, classOf[FlinkCluster])
+    if (infoSpec.getName == null) infoSpec.setName(name)
+    if (infoSpec.getNamespace == null) infoSpec.setNamespace(namespace)
+    infoSpec
+  }
+
   override protected def fullReconciliation() : Unit = {
     //        1. get all the cm/cr and call it desiredSet
     //        2. get all the clusters and call it actualSet (and update the this.clusters)
@@ -76,15 +89,11 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     //        4. actualSet - desiredSet = toBeDeleted
     //        5. modify / scale
 
-    if ("*".equals(namespace)) {
-      log.info("Skipping full reconciliation for namespace '*' (not supported)")
-      return
-    }
     log.info(s"Running full reconciliation for namespace $namespace and kind $entityName..")
 
     val change: AtomicBoolean = new AtomicBoolean(false)
     // Get desired clusters
-    val desired = super.getDesiredSet.asScala.map(cluster => (cluster.getName -> cluster)).toMap
+    val desired = super.getDesiredSet.asScala.map(cluster => (FullName(cluster.getName, cluster.getNamespace) -> cluster)).toMap
     // Get actual workers
     val actual = getActual
 
@@ -108,24 +117,33 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     // add new
     toBeCreated.foreach(cluster => {
         log.info(s"creating cluster $cluster")
+        val currentnamespace = namespace
+        namespace = cluster.namespace
         onAdd(desired.get(cluster).get)
+        namespace = currentnamespace
      })
 
     // delete old
     toBeDeleted.foreach(cluster => {
       val c = new FlinkCluster
-      c.setName(cluster)
+      c.setName(cluster.name)
       log.info(s"deleting cluster $cluster")
+      val currentnamespace = namespace
+      namespace = cluster.namespace
       onDelete(c)
+      namespace = currentnamespace
     })
 
     // rescale
-    desired.values.foreach(cluster => {
-      val desiredWorkers = getFlinkParameters(cluster).worker_instances
-      val actualWorkers = actual.get(cluster.getName).getOrElse(0)
+    desired.foreach(cluster => {
+      val desiredWorkers = getFlinkParameters(cluster._2).worker_instances
+      val actualWorkers = actual.get(cluster._1).getOrElse(0)
       if (desiredWorkers != actualWorkers) {
         change.set(true)
-        rescaleCluster(cluster)
+        val currentnamespace = namespace
+        namespace = cluster._1.namespace
+        rescaleCluster(cluster._2)
+        namespace = currentnamespace
       }
     })
 
@@ -143,16 +161,16 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
   }
 
   // Get amount of workers per cluster
-  private def getActual: Map[String, Integer] = {
+  private def getActual: Map[FullName, Int] = {
     // Get all replication controllers
     val controllers = client.replicationControllers()
     // Filter by namespace
     val namespacedcontrollers = if ("*" == namespace) controllers.inAnyNamespace else controllers.inNamespace(namespace)
     // Get all task managers
     val labels = Map("server" -> "flink", "component" -> OPERATOR_TYPE_WORKER_LABEL, (prefix + OPERATOR_KIND_LABEL, entityName))
-    val workerRcs = namespacedcontrollers.withLabels(labels.asJava).list.getItems.asScala
     // Get workers per name
-    workerRcs.map(rc => rc.getMetadata.getLabels.get(prefix + entityName) -> rc.getSpec.getReplicas).toMap
+    namespacedcontrollers.withLabels(labels.asJava).list.getItems.asScala.map(rc =>
+      FullName(rc.getMetadata.getLabels.get(prefix + entityName), rc.getMetadata.getNamespace) -> rc.getSpec.getReplicas.intValue()).toMap
   }
 
   // Rescale cluster
@@ -195,5 +213,14 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
       val d = new KubernetesFlinkClusterDeployer(client, entityName, prefix)
       deployer = Option(d)
       d
+  }
+}
+
+case class FullName(name: String, namespace: String){
+  def equal(other: AnyRef): Boolean = {
+    other match {
+      case fn : FullName => (name == fn.name) && (namespace == fn.namespace)
+      case _ => false
+    }
   }
 }

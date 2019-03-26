@@ -11,6 +11,7 @@ object DataHelper {
   def fromCRD(crd : CustomResourceDefinition) : FlinkCluster = {
     val cluster = new FlinkCluster()
     cluster.setName(crd.getMetadata.getName)
+    cluster.setNamespace(crd.getMetadata.getNamespace)
     if(crd.getSpec != null) {
       val additionalproperties = crd.getSpec.getAdditionalProperties.asScala
       additionalproperties.get("customImage") match {
