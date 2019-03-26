@@ -13,7 +13,7 @@ object GenerateModel {
 
 
     val codeModel = new JCodeModel()
-    val source = this.getClass.getClassLoader.getResource("./schema/flinkCluster.json")
+    val source = this.getClass.getClassLoader.getResource("schema/flinkCluster.json")
 
     val outputPojoDirectory=new File("./model/target/generated-sources/jsonschema2pojo/")
     outputPojoDirectory.exists() match {

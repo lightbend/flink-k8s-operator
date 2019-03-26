@@ -8,6 +8,7 @@ organization in ThisBuild := "lightbend"
 scalaVersion in ThisBuild := Versions.scalaVersion
 scalaVersion := "2.12.8"
 
+lazy val generateModel = taskKey[Unit]("Generate project model")
 
 // settings for a native-packager based docker project based on sbt-docker plugin
 def sbtdockerAppBase(id: String)(base: String = id): Project = Project(id, base = file(base))
@@ -36,7 +37,10 @@ def sbtdockerAppBase(id: String)(base: String = id): Project = Project(id, base 
   )
 
 lazy val model = (project in file("model"))
-  .settings(libraryDependencies ++= Seq(jsonGenerator, abstractOperator))
+  .settings(
+    libraryDependencies ++= Seq(jsonGenerator, abstractOperator),
+    generateModel := (runMain in Compile).toTask(" com.lightbend.operator.model.GenerateModel").value
+    )
 
 lazy val operator = sbtdockerAppBase("fdp-flink-operator")("./operator")
   .settings(mainClass in Compile := Some("io.radanalytics.operator.Entrypoint"))
