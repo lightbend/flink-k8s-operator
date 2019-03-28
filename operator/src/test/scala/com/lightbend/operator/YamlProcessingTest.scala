@@ -1,19 +1,11 @@
 package com.lightbend.operator
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
-import java.util
-import java.util.Arrays
-
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.lightbend.operator.helpers.DataHelper
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import junit.framework.TestCase
 import org.junit.Test
 import com.lightbend.operator.types.FlinkCluster
-import io.fabric8.kubernetes.api.model.apiextensions.{CustomResourceDefinitionBuilder, JSONSchemaProps}
 import io.radanalytics.operator.common.JSONSchemaReader
-import org.junit.Assert.assertEquals
 
 import scala.collection.JavaConverters._
 

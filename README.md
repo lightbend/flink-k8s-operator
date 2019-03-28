@@ -6,7 +6,7 @@
 This operator uses [abstract-operator](https://github.com/jvm-operators/abstract-operator) library.
 
 ##Building
-THe operator has 2 participating projects:
+The operator has 2 participating projects:
 * model - json definition of the model and scala code to build java classes (the reason is that SBT does not have an equivalent to [jsonschema2pojo-maven-plugin](https://github.com/joelittlejohn/jsonschema2pojo) so it is implemented as a separate project)
 * operator - the actual implementation of the operator
 
@@ -22,28 +22,14 @@ Docker build here leverages base image, that can be build using the following [d
 ##Installation
 To install operator use [Helm](helm/flink-operator) 
 
-Installation parameters include operator image information:
-* repository - operator docker name (lightbend/fdp-flink-operator)
-* tag - operator docker tag (0.0.1)
-* pullPolicy - operator docker pull policy (always)
-
-Operator execution environment, including: 
-
-* namespace - see below
-* reconciliationInterval - how often (in seconds) the full reconciliation should be run (180)
-* metrics - should we expose operator metrics for Prometheus (true)
-* metricsPort - port for the metrics http server (8080)
-* internalJvmMetrics - should we expose operator's internal JVM metrics (true)
-
-Current implementation of the abstract operator currently support three options of namespace watching
-(see class EntryPoint class, run method, lines 70-98)
-* current namespace - namespace where operator starts, specify empty list
-* all namespaces, specify "*"
-* list of specific namespaces, specify comma separated list
-
-Operator's resource requirements
-* memory requirement for an operator (512Mi)
-* cpu requirement for an operator (1000m)
+The following configurations is available for operator:
+* Operator image information including repository - operator docker name (default - lightbend/fdp-flink-operator); tag - operator docker tag (default - 0.0.1) and pullPolicy - operator docker pull policy (default - always)
+* Namespace to watch - three options supported are - empty list - namespace where the operator is installed; explicit list of namespaces, “*” - all namespace (default - “*”)
+* ReconciliationInterval - how often (in seconds) the full reconciliation should be run (default is 180)
+* Metrics - a boolean defining whether operator metrics is exposed to Prometheus (default - true)
+* MetricsPort - port used by metrics http server (default - 8080)
+* InternalJvmMetrics - a boolean defining whether operator's internal JVM metrics is available through Prometheus (default - true)
+* Operator's resource requirements including memory requirement for an operator (default - 512Mi); cpu requirement for an operator (default - 1000m)
 
 ##Basic commands
 To create a cluster run something similar to 
