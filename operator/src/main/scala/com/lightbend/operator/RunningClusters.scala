@@ -15,18 +15,22 @@ class RunningClusters (namespace: String){
   val clusters : Map[String, FlinkCluster]= Map()
   runningClusters.labels(namespace).set(0)
 
-  def put(ci: FlinkCluster): Unit = {
-    log.info(s"Adding new cluster ${ci.getName} in namespace $namespace")
-    runningClusters.labels(namespace).inc()
-    startedTotal.labels(namespace).inc()
-    workers.labels(ci.getName, namespace).set(getFlinkParameters(ci).worker_instances)
-    clusters += (ci.getName -> ci)
+  def put(c: FlinkCluster): Unit = {
+    log.info(s"Adding new cluster ${c.getName} in namespace $namespace")
+    clusters.get(c.getName) match {
+      case Some(value) => // Already exists, skip
+      case _ =>
+        runningClusters.labels(namespace).inc()
+        startedTotal.labels(namespace).inc()
+        workers.labels(c.getName, namespace).set(getFlinkParameters(c).worker_instances)
+        clusters += (c.getName -> c)
+    }
   }
 
-  def update(ci: FlinkCluster): Unit = {
-    log.info(s"Updating cluster ${ci.getName} in namespace $namespace")
-    clusters += (ci.getName -> ci)
-    workers.labels(ci.getName, namespace).set(getFlinkParameters(ci).worker_instances)
+  def update(c: FlinkCluster): Unit = {
+    log.info(s"Updating cluster ${c.getName} in namespace $namespace")
+    clusters += (c.getName -> c)
+    workers.labels(c.getName, namespace).set(getFlinkParameters(c).worker_instances)
   }
 
   def delete(name: String): Unit = {

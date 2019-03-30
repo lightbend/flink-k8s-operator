@@ -15,14 +15,15 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
   private val log = LoggerFactory.getLogger(classOf[KubernetesFlinkClusterDeployer].getName)
   log.info(s"Creating KubernetesFlinkClusterDeployer for the entity name $entityName, prefix$prefix")
 
-  def getResourceList(cluster: FlinkCluster, namespace: String): KubernetesResourceList[_ <: HasMetadata] = client.synchronized {
+  def getResourceList(cluster: FlinkCluster, namespace: String, options: DeploymentOptions): KubernetesResourceList[_ <: HasMetadata] = client.synchronized {
 
     log.info(s"Creating resource list for cluster ${cluster.getName} in namespace $namespace")
     val params = getFlinkParameters(cluster)
-    val masterRc = getRCforMaster(cluster, params, namespace)
-    val workerRc = getRCforWorker(cluster, params, namespace)
-    val masterService = getService(cluster, namespace)
-    new KubernetesListBuilder().withItems(List(masterRc, workerRc, masterService).asJava).build
+    var resourceList = List[HasMetadata]()
+    if(options.master) resourceList = getRCforMaster(cluster, params, namespace) :: resourceList
+    if(options.worker) resourceList = getRCforWorker(cluster, params, namespace) :: resourceList
+    if(options.service) resourceList = getService(cluster, namespace) :: resourceList
+    new KubernetesListBuilder().withItems(resourceList.asJava).build
   }
 
   private def getService(cluster: FlinkCluster, namespace: String): Service = {
@@ -212,6 +213,6 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
   }
 
   def getDefaultLabels(name: String): Map[String, String] = {
-    Map((s"$prefix$OPERATOR_KIND_LABEL" -> entityName),(s"$prefix$entityName", name))
+    Map((s"$prefix$OPERATOR_KIND_LABEL" -> entityName),(s"$prefix$entityName"-> name))
   }
 }
