@@ -82,7 +82,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     val name = info.getMetadata.getName
     val namespace = info.getMetadata.getNamespace
     val mapper = new ObjectMapper
-    var infoSpec = mapper.convertValue(info.getSpec, classOf[FlinkCluster])
+    val infoSpec = mapper.convertValue(info.getSpec, classOf[FlinkCluster])
     if (infoSpec.getName == null) infoSpec.setName(name)
     if (infoSpec.getNamespace == null) infoSpec.setNamespace(namespace)
     infoSpec

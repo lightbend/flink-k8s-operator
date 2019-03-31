@@ -35,10 +35,12 @@ class RunningClusters (namespace: String){
 
   def delete(name: String): Unit = {
     log.info(s"Deleting cluster $name in namespace $namespace")
-    if (clusters.contains(name)) {
-      runningClusters.labels(namespace).dec()
-      workers.labels(name, namespace).set(0)
-      clusters -=name
+    clusters.contains(name) match {
+      case true =>
+        runningClusters.labels(namespace).dec()
+        workers.labels(name, namespace).set(0)
+        clusters -=name
+      case _ =>
     }
   }
 
