@@ -47,6 +47,17 @@ EOF
 ````
 Additional parameters can be added. See [example](yaml/cluster_complete.yaml)
 
+By default a Flink [session cluster](https://ci.apache.org/projects/flink/flink-docs-stable/ops/deployment/kubernetes.html#flink-session-cluster-on-kubernetes) will be created (default argument *taskmanager* will be generated in this case.
+Alternatively you can explicitly specify *taskmanager* and any additional arguments in the master inputs.
+
+If you want to run Flink [job cluster](https://ci.apache.org/projects/flink/flink-docs-stable/ops/deployment/kubernetes.html#flink-job-cluster-on-kubernetes) specify
+*jobcluster* cluster as an input followed by the name of main class for a job and list of parameters. 
+When using job cluster you can additionally specify the following [parameters](https://github.com/apache/flink/tree/release-1.7/flink-container/docker#deploying-via-docker-compose):
+* PARALLELISM - Default parallelism with which to start the job (default: 1), for example *--parallelism <parallelism>* 
+* SAVEPOINT_OPTIONS - Savepoint options to start the cluster with (default: none), for example *--fromSavepoint <SAVEPOINT_PATH> --allowNonRestoredState* 
+
+For more information on parallelism and savepoint options contact [documentation](https://ci.apache.org/projects/flink/flink-docs-stable/ops/cli.html#usage)
+
 ##Seeing what is running
 
 To see running clusters run 

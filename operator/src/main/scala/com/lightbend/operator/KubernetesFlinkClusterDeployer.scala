@@ -68,9 +68,7 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
       cluster.getEnv.asScala.foreach(env => envVars += envBuild(env.getName, env.getValue))
 
     // Arguments
-    var args = List(OPERATOR_TYPE_MASTER_LABEL)
-    if(cluster.getMaster != null && cluster.getMaster.getInputs != null)
-      args = args ++ cluster.getMaster.getInputs.asScala
+    val args = if(cluster.getMaster != null && cluster.getMaster.getInputs != null) cluster.getMaster.getInputs.asScala else List(OPERATOR_TYPE_MASTER_LABEL)
 
     // Liveness probe
     val masterLiveness = new ProbeBuilder()

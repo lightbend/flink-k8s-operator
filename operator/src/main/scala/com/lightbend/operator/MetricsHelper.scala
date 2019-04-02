@@ -11,7 +11,7 @@ object MetricsHelper {
     .register
 
   val runningClusters = Gauge.build.name(PREFIX + "running_clusters")
-    .help("Spark clusters that are currently running.")
+    .help("Flink clusters that are currently running.")
     .labelNames("ns").register
 
   val workers = Gauge.build.name(PREFIX + "running_workers")
@@ -19,6 +19,6 @@ object MetricsHelper {
     .labelNames("cluster", "ns").register
 
   val startedTotal = Gauge.build.name(PREFIX + "started_clusters_total")
-    .help("Spark clusters has been started by operator.")
+    .help("Flink clusters has been started by operator.")
     .labelNames("ns").register
 }
