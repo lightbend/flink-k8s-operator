@@ -106,6 +106,24 @@ spec:
               terminationGracePeriodSeconds: 5
               serviceAccountName: flink-operator
               serviceAccount: flink-operator
+  customresourcedefinitions:
+    owned:
+    - name: flinkclusters.lightbend.com
+      version: v1
+      kind: FlinkCluster
+      displayName: Flink Cluster
+      description: Apache Flink cluster
+      specDescriptors:
+      - description: The desired number of task managers instances in the Flink cluster.
+        displayName: Instances
+        path: worker.instances
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:podCount'
+    - name: flinkclusters.lightbend.com
+      version: v1
+      kind: FlinkCluster
+      displayName: Flink Application
+      description: Apache Flink application
   keywords:
     - flink
     - operator
