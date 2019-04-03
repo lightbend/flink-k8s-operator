@@ -89,11 +89,25 @@ spec:
     strategy: deployment
     spec:
       permissions:
+      clusterPermissions:
       - serviceAccountName: flink-operator
         rules:
+        - apiGroups:
+          - lightbend.com
+          resources:
+          - "*"
+          verbs:
+          - "*"
         - apiGroups: [""]
-          resources: ["pods", "replicationcontrollers", "services"]
-          verbs: ["create", "delete", "deletecollection", "get", "list", "update", "watch", "patch"]
+          resources: ["pods", "replicationcontrollers", "services", "configmaps"]
+          verbs:
+          - "*"
+        - apiGroups:
+          - apiextensions.k8s.io
+          resources:
+          - customresourcedefinitions
+          verbs:
+          - list
       deployments:
       - name: flink-operator
         spec:
