@@ -87,12 +87,12 @@ spec:
           selector:
             matchLabels:
               app.kubernetes.io/name: flink-operator
-              app.kubernetes.io/version: v0.3.4-v1alpha1
+              app.kubernetes.io/version: v0.0.1-v1alpha1
           template:
             metadata:
               labels:
                 app.kubernetes.io/name: flink-operator
-                app.kubernetes.io/version: v0.0.1
+                app.kubernetes.io/version: v0.0.1-v1alpha1
             spec:
               containers:
                 - name: flink-operator
