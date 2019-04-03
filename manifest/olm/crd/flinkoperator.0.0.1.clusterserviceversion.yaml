@@ -60,7 +60,6 @@ spec:
   install:
     strategy: deployment
     spec:
-      permissions:
       clusterPermissions:
       - serviceAccountName: flink-operator
         rules:
