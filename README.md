@@ -58,6 +58,8 @@ When using job cluster you can additionally specify the following [parameters](h
 
 For more information on parallelism and savepoint options contact [documentation](https://ci.apache.org/projects/flink/flink-docs-stable/ops/cli.html#usage)
 
+**Note** *An operator assume that custom images are build using [this project](https://github.com/lightbend/fdp-flink-build). If you build your images differently, the commands for running applications will change* 
+
 ##Seeing what is running
 
 To see running clusters run 
