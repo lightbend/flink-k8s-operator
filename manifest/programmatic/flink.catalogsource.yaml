@@ -1,0 +1,10 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: lightbend-operators
+  namespace: flink
+spec:
+  displayName: Lightbend Operators
+  publisher: Lightbend
+  sourceType: configmap
+  configMap: lightbend-operators
