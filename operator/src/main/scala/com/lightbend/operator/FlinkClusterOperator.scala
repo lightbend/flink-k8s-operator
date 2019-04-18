@@ -5,8 +5,6 @@ import com.lightbend.operator.types.FlinkCluster
 import io.radanalytics.operator.common.{AbstractOperator, EntityInfo, Operator}
 import org.slf4j.LoggerFactory
 import Constants._
-import com.fasterxml.jackson.databind.ObjectMapper
-import io.radanalytics.operator.common.crd.{InfoClass}
 import io.radanalytics.operator.resource.LabelsHelper._
 
 import scala.collection.mutable.{Map => MMap}
@@ -75,17 +73,6 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
             getClusters(namespace).update(newCluster)
         }
     }
-  }
-
-  // Convert CRD resource
-  override protected def convertCr (info : InfoClass[_]): FlinkCluster = {
-    val name = info.getMetadata.getName
-    val namespace = info.getMetadata.getNamespace
-    val mapper = new ObjectMapper
-    val infoSpec = mapper.convertValue(info.getSpec, classOf[FlinkCluster])
-    if (infoSpec.getName == null) infoSpec.setName(name)
-    if (infoSpec.getNamespace == null) infoSpec.setNamespace(namespace)
-    infoSpec
   }
 
   override protected def fullReconciliation() : Unit = {

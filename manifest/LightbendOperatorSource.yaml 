@@ -1,0 +1,11 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorSource
+metadata:
+  name: lightbend-operators
+  namespace: openshift-marketplace
+  labels:
+    opsrc-provider: Lightbend
+spec:
+  type: appregistry
+  endpoint: https://quay.io/cnr
+  registryNamespace: blublinsky
