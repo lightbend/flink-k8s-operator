@@ -153,7 +153,8 @@ oc delete FlinkCluster my-cluster
 
 ---
 **Note**
-The above CRD commands are not global, They only show the resources in a namespace that you are in.
+
+The above CRD commands are not global, they only show the resources in a namespace that you are in.
 
 ---
 
