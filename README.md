@@ -73,6 +73,7 @@ For more information on parallelism and savepoint options, see the [documentatio
 
 This operator assumes that custom images are build using [this project](https://github.com/lightbend/fdp-flink-build).
 If you build your images differently, the commands for running applications will change
+
 ---
 
 ## Seeing what is running
@@ -153,6 +154,7 @@ oc delete FlinkCluster my-cluster
 ---
 **Note**
 The above CRD commands are not global, They only show the resources in a namespace that you are in.
+
 ---
 
 ## Metrics
