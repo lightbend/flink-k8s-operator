@@ -50,7 +50,7 @@ spec:
 
 Then, this YAML file can be applied to a Kubernetes cluster, using `kubectl`
 ```
-kubectl create -f <flink-app.yaml>
+kubectl create -f flink-app.yaml
 ```
 
 Additional parameters can be added. See [example](yaml/cluster_complete.yaml)
