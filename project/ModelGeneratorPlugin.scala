@@ -1,41 +1,39 @@
 import sbt._
+import sbt.Keys._
 import org.jsonschema2pojo._
 import org.jsonschema2pojo.rules.RuleFactory
 import java.io.File
 
 import com.sun.codemodel.JCodeModel
-import sbt.Opts.compile
 
 object ModelGeneratorPlugin extends AutoPlugin {
-
-  //override def trigger = allRequirements
-
+  
   object autoImport {
     lazy val generateModel = taskKey[Unit]("Generates the Model from a JSON Schema")
     lazy val modelSchemaLocation = settingKey[String]("The source for the schema definition")
-    lazy val sayHello = taskKey[Unit]("say hello")
   }
 
   import autoImport._
+
+  val GeneratedSrcLocation = "target/generated-sources/jsonschema2pojo/"
 
   override def projectSettings = Seq(
     generateModel := Def.taskDyn {
       Def.task {
         val schemaLocation = modelSchemaLocation.value
-        generate(schemaLocation)
+        val baseDir = baseDirectory.value
+        generate(schemaLocation, baseDir)
       }
-    }.value
-    
+    }.value,
+    unmanagedSourceDirectories in Compile += baseDirectory.value / GeneratedSrcLocation
   )
 
-  def generate(schemaResource: String)= {
-
+  def generate(schemaResource: String, baseDir: File)= {
 
     val codeModel = new JCodeModel()
     val source = new File(schemaResource).toURI.toURL
-    println(s"Using source: $source")
 
-    val outputPojoDirectory=new File("./target/generated-sources/jsonschema2pojo/")
+    val outputPojoDirectory=new File(baseDir, GeneratedSrcLocation)
     if (!outputPojoDirectory.exists()) {
       outputPojoDirectory.mkdirs()
     }
