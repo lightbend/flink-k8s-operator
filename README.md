@@ -5,22 +5,24 @@
 
 This operator uses [abstract-operator](https://github.com/jvm-operators/abstract-operator) library.
 
-##Building
+## Building and Packaging
+
 The operator has 2 participating projects:
 * model - json definition of the model and scala code to build java classes (the reason is that SBT does not have an equivalent to [jsonschema2pojo-maven-plugin](https://github.com/joelittlejohn/jsonschema2pojo) so it is implemented as a separate project)
 * operator - the actual implementation of the operator
 
-Before building you need to generate types by running [GenerateMOdel](model/src/main/scala/com/lightbend/operator/model/GenerateModel.scala)
-Then make sure that [generated classes](model/target/generated-sources/jsonschema2pojo) are included in your code sources
+Before building, you need to generate types by running [GenerateModel](model/src/main/scala/com/lightbend/operator/model/GenerateModel.scala)
+Then make sure that the [generated classes](model/target/generated-sources/jsonschema2pojo) are included in your code sources
 
-NOw build can be done running command:
+Now build can be done running command:
 ````
  sbt docker 
 ````
-Docker build here leverages base image, that can be build using the following [docker file](./Dockerfile)
+This _docker build_ requires a base image that can be build using the following [docker file](./Dockerfile)
 
-##Installation
-To install operator use [Helm](helm/flink-operator) 
+## Installation
+
+To install the operator use [Helm](helm/flink-operator)
 
 The following configurations is available for operator:
 * Operator image information including repository - operator docker name (default - lightbend/fdp-flink-operator); tag - operator docker tag (default - 0.0.1) and pullPolicy - operator docker pull policy (default - always)
@@ -31,10 +33,10 @@ The following configurations is available for operator:
 * InternalJvmMetrics - a boolean defining whether operator's internal JVM metrics is available through Prometheus (default - true)
 * Operator's resource requirements including memory requirement for an operator (default - 512Mi); cpu requirement for an operator (default - 1000m)
 
-##Basic commands
-To create a cluster run something similar to 
-````
-cat <<EOF | kubectl create -f -
+## Basic commands
+
+To create a cluster, create a YAML file (let's call this one `flink-app.yaml`) with something similar to this template:
+```
 apiVersion: lightbend.com/v1
 kind: FlinkCluster
 metadata:
@@ -43,33 +45,49 @@ spec:
   flinkConfiguration:
     num_taskmanagers: "2"
     taskmanagers_slots: "2"
-EOF
-````
+
+```
+
+Then, this YAML file can be applied to a Kubernetes cluster, using `kubectl`
+```
+kubectl create -f flink-app.yaml
+```
+
 Additional parameters can be added. See [example](yaml/cluster_complete.yaml)
 
-By default a Flink [session cluster](https://ci.apache.org/projects/flink/flink-docs-stable/ops/deployment/kubernetes.html#flink-session-cluster-on-kubernetes) will be created (default argument *taskmanager* will be generated in this case.
-Alternatively you can explicitly specify *taskmanager* and any additional arguments in the master inputs.
+By default a Flink [session cluster](https://ci.apache.org/projects/flink/flink-docs-stable/ops/deployment/kubernetes.html#flink-session-cluster-on-kubernetes) will be created
+(a default argument *taskmanager* will be generated in this case).
+Alternatively you can explicitly specify the *taskmanager* and any additional arguments in the master inputs.
 
 If you want to run Flink [job cluster](https://ci.apache.org/projects/flink/flink-docs-stable/ops/deployment/kubernetes.html#flink-job-cluster-on-kubernetes) specify
-*jobcluster* cluster as an input followed by the name of main class for a job and list of parameters. 
-When using job cluster you can additionally specify the following [parameters](https://github.com/apache/flink/tree/release-1.7/flink-container/docker#deploying-via-docker-compose):
-* PARALLELISM - Default parallelism with which to start the job (default: 1), for example *--parallelism <parallelism>* 
-* SAVEPOINT_OPTIONS - Savepoint options to start the cluster with (default: none), for example *--fromSavepoint <SAVEPOINT_PATH> --allowNonRestoredState* 
+*jobcluster* cluster as an input followed by the name of the main class for a job and the list of parameters.
 
-For more information on parallelism and savepoint options contact [documentation](https://ci.apache.org/projects/flink/flink-docs-stable/ops/cli.html#usage)
+When using a job cluster, you can additionally specify the following [parameters](https://github.com/apache/flink/tree/release-1.7/flink-container/docker#deploying-via-docker-compose):
+* `PARALLELISM` - Default parallelism with which to start the job (default: 1), for example `--parallelism <parallelism>`
+* `SAVEPOINT_OPTIONS` - Savepoint options to start the cluster with (default: none), for example `--fromSavepoint <SAVEPOINT_PATH> --allowNonRestoredState`
 
-**Note** *An operator assume that custom images are build using [this project](https://github.com/lightbend/fdp-flink-build). If you build your images differently, the commands for running applications will change* 
+For more information on parallelism and savepoint options, see the [documentation](https://ci.apache.org/projects/flink/flink-docs-stable/ops/cli.html#usage)
 
-##Seeing what is running
+---
+**Note**
 
-To see running clusters run 
+This operator assumes that custom images are build using [this project](https://github.com/lightbend/fdp-flink-build).
+If you build your images differently, the commands for running applications will change
+
+---
+
+## Seeing what is running
+
+To see running clusters, execute:
+
 ````
 oc get FlinkCluster
 NAME         AGE
 my-cluster   13m
 ```` 
 
-To get the information about specific cluster, run
+To get the information about specific cluster, run:
+
 ````
 oc describe FlinkCluster my-cluster
 Name:         my-cluster
@@ -113,7 +131,8 @@ Spec:
     Taskmanagers _ Slots:  2
 Events:                    <none>
 ````
-To modify the cluster run the following:
+
+To modify the cluster, run the following:
 ````
 cat <<EOF | kubectl replace -f -
 > apiVersion: lightbend.com/v1
@@ -127,16 +146,22 @@ cat <<EOF | kubectl replace -f -
 > EOF
 ````
 
-To delete the cluster run the following:
+To delete the cluster, run the following:
 ````
 oc delete FlinkCluster my-cluster
 ````
 
-**Note** *The above CRD commands are not global, They only show the resources in a namespace that you are in.* 
+---
+**Note**
 
-##Metrics
+The above CRD commands are not global, they only show the resources in a namespace that you are in.
+
+---
+
+## Metrics
+
 Prometheus support is enabled via Helm chart
-To see all available metrics, go to Prometheus console/graph and enter the following query
+To see all available metrics, go to Prometheus console/graph and enter the following query:
 ````
 {app_kubernetes_io_name="flink-operator"}
 ````
