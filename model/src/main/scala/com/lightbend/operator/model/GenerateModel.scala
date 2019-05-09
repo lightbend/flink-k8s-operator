@@ -16,16 +16,13 @@ object GenerateModel {
     val source = this.getClass.getClassLoader.getResource("./schema/flinkCluster.json")
 
     val outputPojoDirectory=new File("./model/target/generated-sources/jsonschema2pojo/")
-    outputPojoDirectory.exists() match {
-      case false => outputPojoDirectory.mkdirs()
-      case _ =>
+    if (!outputPojoDirectory.exists()) {
+      outputPojoDirectory.mkdirs()
     }
 
     val config = new DefaultGenerationConfig() {
-      override def isGenerateBuilders: Boolean = { // set config option by overriding method
-        true
-      }
-   }
+      override val isGenerateBuilders: Boolean = true  // set config option by overriding method
+    }
 
     val mapper = new SchemaMapper(new RuleFactory(config, new Jackson2Annotator(config), new SchemaStore()), new SchemaGenerator())
     mapper.generate(codeModel, "FlinkCluster", "com.lightbend.operator.types", source)

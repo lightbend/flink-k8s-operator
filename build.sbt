@@ -9,6 +9,7 @@ scalaVersion in ThisBuild := Versions.scalaVersion
 scalaVersion := "2.12.8"
 
 
+
 // settings for a native-packager based docker project based on sbt-docker plugin
 def sbtdockerAppBase(id: String)(base: String = id): Project = Project(id, base = file(base))
   .enablePlugins(sbtdocker.DockerPlugin, JavaAppPackaging)
@@ -36,7 +37,14 @@ def sbtdockerAppBase(id: String)(base: String = id): Project = Project(id, base 
   )
 
 lazy val model = (project in file("model"))
-  .settings(libraryDependencies ++= Seq(jsonGenerator, abstractOperator))
+  .enablePlugins(ModelGeneratorPlugin)
+  .settings(
+    libraryDependencies ++= Seq(jsonGenerator, abstractOperator),
+    modelSchemaLocation := "./schema/flinkCluster.json",
+    (compile in Compile) := ((compile in Compile) dependsOn generateModel).value
+  
+  )
+
 
 lazy val operator = sbtdockerAppBase("fdp-flink-operator")("./operator")
   .settings(mainClass in Compile := Some("io.radanalytics.operator.Entrypoint"))
