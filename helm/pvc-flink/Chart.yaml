@@ -1,0 +1,4 @@
+apiVersion: v1
+name: flink-pvc
+description: PVC for testing Flink operator
+version: 0.1

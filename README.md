@@ -45,6 +45,25 @@ spec:
 
 ```
 
+If you want to create a cluster with the checkpointing volume mounted the template should be
+
+````
+cat <<EOF | kubectl create -f -
+apiVersion: lightbend.com/v1
+kind: FlinkCluster
+metadata:
+  name: my-cluster
+spec:
+  flinkConfiguration:
+    num_taskmanagers: "2"
+    taskmanagers_slots: "2"
+  checkpointing:
+    PVC : flink-operator-checkpointing
+    mountdirectory: /flink/checkpoints
+    
+EOF
+````
+
 Then, this YAML file can be applied to a Kubernetes cluster, using `kubectl`
 ```
 kubectl create -f flink-app.yaml

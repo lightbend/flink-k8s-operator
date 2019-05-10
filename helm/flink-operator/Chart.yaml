@@ -1,8 +1,8 @@
 apiVersion: v1
 name: flink-cluster-operator
-description: Operator for managing the Spark clusters and apps in Kubernetes and OpenShift
-version: 0.0.1
-appVersion: 0.0.1
+description: Operator for managing the Flink clusters and apps in Kubernetes and OpenShift
+version: 0.0.2
+appVersion: 0.0.2
 icon: http://www3.imperial.ac.uk/newseventsimages?p_image_type=MEDIUM&p_image_id=27451
 home: https://github.com/lightbend/fdp-flink-operator
 sources:

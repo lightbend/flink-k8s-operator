@@ -7,4 +7,4 @@ spec:
   sourceNamespace: flink
   name: lightbend-flink
   channel: alpha
-  startingCSV: flinkoperator.v0.0.1
+  startingCSV: flinkoperator.v0.0.2

@@ -1,4 +1,4 @@
 packageName: lightbend-flink
 channels:
 - name: alpha
-  currentCSV: flinkoperator.v0.0.1
+  currentCSV: flinkoperator.v0.0.2

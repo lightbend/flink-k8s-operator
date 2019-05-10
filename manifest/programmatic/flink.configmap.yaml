@@ -40,11 +40,11 @@ data:
             ]
           categories: "apache flink, apache, flink"
           certified: "False"
-          containerImage: "lightbend/fdp-flink-operator:0.0.1"
+          containerImage: "lightbend/fdp-flink-operator:0.0.2"
           capabilities: Basic Install
           description: "An operator for managing the Apache Flink clusters including starting applications."
           support: lightbend
-        name: flinkoperator.v0.0.1
+        name: flinkoperator.v0.0.2
         namespace: openshift-operators
       spec:
         customresourcedefinitions:
@@ -121,12 +121,12 @@ data:
                 selector:
                   matchLabels:
                     app.kubernetes.io/name: flink-operator
-                    app.kubernetes.io/version: v0.0.1-v1alpha1
+                    app.kubernetes.io/version: v0.0.2-v1alpha1
                 template:
                   metadata:
                     labels:
                       app.kubernetes.io/name: flink-operator
-                      app.kubernetes.io/version: v0.0.1-v1alpha1
+                      app.kubernetes.io/version: v0.0.2-v1alpha1
                   spec:
                     containers:
                     - env:
@@ -136,7 +136,7 @@ data:
                         valueFrom:
                           fieldRef:
                             fieldPath: "metadata.annotations['olm.targetNamespaces']"
-                      image: "lightbend/fdp-flink-operator:0.0.1"
+                      image: "lightbend/fdp-flink-operator:0.0.2"
                       imagePullPolicy: Always
                       name: flink-operator
                     restartPolicy: Always
@@ -161,7 +161,7 @@ data:
         - flink
         labels:
           alm-owner-enterprise-app: flink-operator
-          alm-status-descriptors: flink-operator.v0.0.1
+          alm-status-descriptors: flink-operator.v0.0.2
         maintainers:
         -
           email: support@lightbend.com
@@ -170,9 +170,9 @@ data:
         provider:
           name: Lightbend
           url: www.lightbend.com
-        version: "0.0.1"
+        version: "0.0.2"
   packages: |-
     - packageName: lightbend-flink
       channels:
       - name: alpha
-        currentCSV: flinkoperator.v0.0.1
+        currentCSV: flinkoperator.v0.0.2

@@ -1,0 +1,30 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: flink-operator-checkpointing
+  labels:
+    app.kubernetes.io/name: flink-operator
+spec:
+  storageClassName: {{ .Values.storageclasse }}
+  accessModes:
+  - "ReadWriteMany"
+  resources:
+    requests:
+      storage: {{ .Values.checkpointing.size | quote }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: flink-operator-savepointing
+  labels:
+    app.kubernetes.io/name: flink-operator
+spec:
+  storageClassName: {{ .Values.storageclasse }}
+  accessModes:
+  - "ReadWriteMany"
+  resources:
+    requests:
+      storage: {{ .Values.savepointing.size | quote }}
+
+

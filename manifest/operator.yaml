@@ -41,7 +41,7 @@ spec:
       serviceAccountName: flink-operator
       containers:
       - name: flink-operator
-        image: lightbend/fdp-flink-operator:0.0.1
+        image: lightbend/fdp-flink-operator:0.0.2
         env:
         - name: CRD
           value: "true"

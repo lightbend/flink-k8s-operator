@@ -3,7 +3,7 @@ import Dependencies._
 // global settings for this build
 
 name in ThisBuild := "fdp-flink-operator"
-version in ThisBuild := "0.0.1"
+version in ThisBuild := "0.0.2"
 organization in ThisBuild := "lightbend"
 scalaVersion in ThisBuild := Versions.scalaVersion
 
@@ -38,13 +38,11 @@ def sbtdockerAppBase(id: String)(base: String = id): Project = Project(id, base 
 lazy val operator = sbtdockerAppBase("fdp-flink-operator")("./operator")
   .enablePlugins(ModelGeneratorPlugin)
   .settings(
-    libraryDependencies ++= Seq(jsonGenerator, abstractOperator),
+    libraryDependencies ++= Seq(abstractOperator, junit),
     modelSchemaLocation := "./schema/flinkCluster.json",
-    (compile in Compile) := ((compile in Compile) dependsOn generateModel).value
-
+    (compile in Compile) := ((compile in Compile) dependsOn generateModel).value,
+    mainClass in Compile := Some("io.radanalytics.operator.Entrypoint")
   )
-  .settings(mainClass in Compile := Some("io.radanalytics.operator.Entrypoint"))
-  .settings(libraryDependencies ++= Seq(junit))
 
 lazy val flinkoperator = (project in file("."))
   .aggregate(operator)

@@ -40,7 +40,10 @@ Additionall parameters that can be configured for cluser are:
 | `spec.master.cpus'           | cpus per jpbmanager                                          |  '2'                                    |
 | `spec.master.memory'         | memory per jobmanager                                        |  '1048'                                 |
 | `spec.master.inputs'         | inputs to jobmanager jobmanager, used to start jobs at cluster creation | None                         |
-
+| `spec.checkpointing.PVC'     | PVC name for checkpointing                                   | None                                    | 
+| `spec.checkpointing.mountdirectory'| mount directory for checkpointing                      | None                                    | 
+| `spec.savepointing.PVC'      | PVC name for savepointing                                    | None                                    | 
+| `spec.savepointing.mountdirectory'| mount directory for savepointing                        | None                                    | 
 
 
 ### Configuration

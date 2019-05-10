@@ -12,4 +12,4 @@ spec:
     taskmanagers_slots: "2"
 EOF
 
-For more details consult https://github.com/radanalyticsio/spark-operator/blob/master/README.md
+For more details consult https://github.com/lightbend/fdp-flink-operator/blob/master/README.md

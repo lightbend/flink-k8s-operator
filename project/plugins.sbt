@@ -1,6 +1,7 @@
+
 resolvers += "Bintray Repository" at "https://dl.bintray.com/shmishleniy/"
 
-libraryDependencies += "org.jsonschema2pojo" % "jsonschema2pojo-core" % "1.0.0"
+libraryDependencies += "org.jsonschema2pojo" % "jsonschema2pojo-core" % "1.0.1"
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.5")
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.4")

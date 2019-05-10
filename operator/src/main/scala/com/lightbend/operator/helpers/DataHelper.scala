@@ -1,6 +1,6 @@
 package com.lightbend.operator.helpers
 
-import com.lightbend.operator.types.{FlinkCluster, NameValue, RCSpec}
+import com.lightbend.operator.types.{FlinkCluster, NameValue, Persistence, RCSpec}
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 
 import scala.collection.JavaConverters._
@@ -98,6 +98,43 @@ object DataHelper {
           cluster.setWorker(worker)
         case _ =>
       }
+
+      additionalproperties.get("checkpointing") match {
+        case Some(value) =>
+          val pinfo = value.asInstanceOf[LinkedHashMap[String, AnyRef]]
+          val persistence = new Persistence()
+          pinfo.get("PVC") match {
+            case pvc if (pvc != null) =>
+              persistence.setPvc(pvc.asInstanceOf[String])
+            case _ =>
+          }
+          pinfo.get("mountdirectory") match {
+            case mountdirectory if (mountdirectory != null) =>
+              persistence.setMountdirectory(mountdirectory.asInstanceOf[String])
+            case _ =>
+          }
+          cluster.setCheckpointing(persistence)
+        case _ =>
+      }
+
+      additionalproperties.get("savepointing") match {
+        case Some(value) =>
+          val pinfo = value.asInstanceOf[LinkedHashMap[String, AnyRef]]
+          val persistence = new Persistence()
+          pinfo.get("PVC") match {
+            case pvc if (pvc != null) =>
+              persistence.setPvc(pvc.asInstanceOf[String])
+            case _ =>
+          }
+          pinfo.get("mountdirectory") match {
+            case mountdirectory if (mountdirectory != null) =>
+              persistence.setMountdirectory(mountdirectory.asInstanceOf[String])
+            case _ =>
+          }
+          cluster.setSavepointing(persistence)
+        case _ =>
+      }
+
     }
 
     // Return result

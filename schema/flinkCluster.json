@@ -30,9 +30,15 @@
     "labels" : {
       "existingJavaType" : "java.util.Map<String,String>",
       "type" : "object"
+    },
+    "checkpointing": {
+      "$ref": "#/definitions/Persistence"
+    },
+    "savepointing": {
+      "$ref": "#/definitions/Persistence"
     }
   },
-  "required": [ ],
+  "required": [ "master", "worker"],
   "definitions": {
     "RCSpec": {
       "type": "object",
@@ -48,6 +54,17 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "Persistence": {
+      "type": "object",
+      "properties": {
+        "PVC": {
+          "type": "string"
+        },
+        "mountdirectory": {
+          "type": "string"
         }
       }
     },

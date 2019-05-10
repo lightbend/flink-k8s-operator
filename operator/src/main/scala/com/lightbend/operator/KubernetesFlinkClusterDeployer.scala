@@ -95,6 +95,25 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
       .withArgs(args.asJava)
       .withResources(new ResourceRequirementsBuilder().withLimits(limits.asJava).build())
 
+    // Persistence
+    val volumes = new ListBuffer[Volume]
+    params.checkpointing match{
+      case Some(volume) => containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
+        .withName(volume.getPvc).withMountPath(volume.getMountdirectory).withReadOnly(false)
+        .build())
+        volumes += new VolumeBuilder().withName(volume.getPvc).withPersistentVolumeClaim(
+          new PersistentVolumeClaimVolumeSource(volume.getPvc, false)).build()
+      case _ =>
+    }
+    params.savepointing match{
+      case Some(volume) => containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
+        .withName(volume.getPvc).withMountPath(volume.getMountdirectory).withReadOnly(false)
+        .build())
+        volumes += new VolumeBuilder().withName(volume.getPvc).withPersistentVolumeClaim(
+          new PersistentVolumeClaimVolumeSource(volume.getPvc, false)).build()
+      case _ =>
+    }
+
     // Metrics
     var annotations = Map[String, String]()
     if (cluster.getMetrics) {
@@ -117,7 +136,7 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
             .withAnnotations(annotations.asJava)
             .withLabels(labels.asJava)
           .endMetadata
-          .withNewSpec.withContainers(containerBuilder.build).endSpec
+          .withNewSpec.withContainers(containerBuilder.build).withVolumes(volumes.toList.asJava).endSpec()
         .endTemplate
       .endSpec.build
   }
@@ -166,6 +185,25 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
       .withArgs(args.asJava)
       .withResources(new ResourceRequirementsBuilder().withLimits(limits.asJava).build())
 
+    // Persistence
+    val volumes = new ListBuffer[Volume]
+    params.checkpointing match{
+      case Some(volume) => containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
+        .withName(volume.getPvc).withMountPath(volume.getMountdirectory).withReadOnly(false)
+        .build())
+        volumes += new VolumeBuilder().withName(volume.getPvc).withPersistentVolumeClaim(
+          new PersistentVolumeClaimVolumeSource(volume.getPvc, false)).build()
+      case _ =>
+    }
+    params.savepointing match{
+      case Some(volume) => containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
+        .withName(volume.getPvc).withMountPath(volume.getMountdirectory).withReadOnly(false)
+        .build())
+        volumes += new VolumeBuilder().withName(volume.getPvc).withPersistentVolumeClaim(
+          new PersistentVolumeClaimVolumeSource(volume.getPvc, false)).build()
+      case _ =>
+    }
+
     // Metrics
     var annotations = Map[String, String]()
     if (cluster.getMetrics) {
@@ -188,7 +226,7 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
             .withAnnotations(annotations.asJava)
             .withLabels(labels.asJava)
           .endMetadata
-          .withNewSpec.withContainers(containerBuilder.build).endSpec
+          .withNewSpec.withContainers(containerBuilder.build).withVolumes(volumes.toList.asJava).endSpec
         .endTemplate
       .endSpec.build
   }

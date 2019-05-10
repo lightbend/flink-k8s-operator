@@ -1,0 +1,5 @@
+storageclasse: "glusterfs-storage"
+checkpointing:
+  size: 10Gi
+savepointing:
+  size: 10Gi

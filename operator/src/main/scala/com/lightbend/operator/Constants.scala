@@ -1,6 +1,7 @@
 package com.lightbend.operator
 
-import com.lightbend.operator.types.FlinkCluster
+import com.lightbend.operator.types.{FlinkCluster, Persistence}
+
 import scala.collection.JavaConverters._
 
 object Constants {
@@ -68,10 +69,20 @@ object Constants {
           conf.asScala.getOrElse("taskmanagers_slots", DEFAULT_TASKMANAGER_SLOTS))
       case _ => ("6170", DEFAULT_TASKMANAGER_INSTANCES, DEFAULT_TASKMANAGER_SLOTS)
     }
+    val check : Option[Persistence] = cluster.getCheckpointing match {
+      case value if (value == null) => None
+      case _ => Some(cluster.getCheckpointing)
+    }
+    val save : Option[Persistence] = cluster.getSavepointing match {
+      case value if (value == null) => None
+      case _ => Some(cluster.getSavepointing)
+    }
 
-    FlinkParams(flinkP._1, masterParams._1, workerParams._1, masterParams._2, workerParams._2, imageRef, flinkP._2.toInt, flinkP._3)
+    FlinkParams(flinkP._1, masterParams._1, workerParams._1, masterParams._2, workerParams._2,
+      imageRef, flinkP._2.toInt, flinkP._3, check, save)
   }
 }
 
 case class FlinkParams(metric_query_port : String, master_memory : String, worker_memory : String,
-                       master_cpu : String, worker_cpu : String, imageRef : String, worker_instances : Int, worker_slots : String)
+                       master_cpu : String, worker_cpu : String, imageRef : String, worker_instances : Int,
+                       worker_slots : String, checkpointing : Option[Persistence], savepointing : Option[Persistence])

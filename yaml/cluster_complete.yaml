@@ -21,3 +21,9 @@ spec:
     inputs:
     - input1
     - input2
+  checkpointing:
+    PVC : checkpvcname
+    mountdirectory: checkdirectory
+  savepointing:
+    PVC : savepvcname
+    mountdirectory: savedirectory
