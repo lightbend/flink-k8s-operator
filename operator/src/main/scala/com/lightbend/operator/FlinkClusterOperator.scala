@@ -12,7 +12,6 @@ import io.radanalytics.operator.resource.LabelsHelper._
 import scala.collection.mutable.{Map => MMap}
 import scala.collection.JavaConverters._
 
-
 @Operator(forKind = classOf[FlinkCluster], prefix = "lightbend.com", crd=true)
 class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
 

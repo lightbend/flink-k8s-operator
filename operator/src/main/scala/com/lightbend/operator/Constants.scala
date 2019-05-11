@@ -48,7 +48,7 @@ object Constants {
         scalaConf.getOrElse("num_taskmanagers", DEFAULT_TASKMANAGER_INSTANCES),
         scalaConf.getOrElse("taskmanagers_slots", DEFAULT_TASKMANAGER_SLOTS))
     }.getOrElse{("6170", DEFAULT_TASKMANAGER_INSTANCES, DEFAULT_TASKMANAGER_SLOTS)}
-    
+
     val check : Option[Persistence] = Option(cluster.getCheckpointing)
 
     val save : Option[Persistence] = Option(cluster.getSavepointing)
