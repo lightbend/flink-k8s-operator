@@ -64,11 +64,20 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
     envVars += envBuild("CONTAINER_METRIC_PORT", params.metric_query_port)
     envVars += envBuild("JOBMANAGER_MEMORY", s"${params.master_memory}m")
     envVars += envBuild("JOB_MANAGER_RPC_ADDRESS", s"$name-$OPERATOR_TYPE_MASTER_LABEL")
+    params.checkpointing match {
+      case Some(persistence) => envVars += envBuild("CheckpointDir", persistence.getMountdirectory)
+      case _ =>
+    }
+    params.savepointing match {
+      case Some(persistence) => envVars += envBuild("SavepointDir", persistence.getMountdirectory)
+      case _ =>
+    }
     if (cluster.getEnv != null)
       cluster.getEnv.asScala.foreach(env => envVars += envBuild(env.getName, env.getValue))
 
     // Arguments
-    val args = if(cluster.getMaster != null && cluster.getMaster.getInputs != null) cluster.getMaster.getInputs.asScala else List(OPERATOR_TYPE_MASTER_LABEL)
+    val args = if(cluster.getMaster != null && cluster.getMaster.getInputs != null)
+      cluster.getMaster.getInputs.asScala else List(OPERATOR_TYPE_MASTER_LABEL)
 
     // Liveness probe
     val masterLiveness = new ProbeBuilder()
@@ -163,6 +172,14 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
     envVars += new EnvVarBuilder().withName("K8S_POD_IP").withValueFrom(
       new EnvVarSourceBuilder().withFieldRef(
         new ObjectFieldSelectorBuilder().withFieldPath("status.podIP").build()).build()).build
+    params.checkpointing match {
+      case Some(persistence) => envVars += envBuild("CheckpointDir", persistence.getMountdirectory)
+      case _ =>
+    }
+    params.savepointing match {
+      case Some(persistence) => envVars += envBuild("SavepointDir", persistence.getMountdirectory)
+      case _ =>
+    }
     if (cluster.getEnv != null)
       cluster.getEnv.asScala.foreach(env => envVars += envBuild(env.getName, env.getValue))
 
