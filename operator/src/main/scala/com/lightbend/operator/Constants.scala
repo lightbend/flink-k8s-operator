@@ -16,67 +16,42 @@ object Constants {
   val OPERATOR_TYPE_MASTER_LABEL = "jobmanager"
   val OPERATOR_TYPE_WORKER_LABEL = "taskmanager"
 
+  def getSafeValueWithDefault[T](t:T, default: => T) : T = if(t == null) default else t
+
   def getDefaultFlinkImage: String = {
-    System.getenv("DEFAULT_FLINK_CLUSTER_IMAGE") match{
-      case image if image != null => image
-      case _ => DEFAULT_FLINK_IMAGE
-    }
+    getSafeValueWithDefault(System.getenv("DEFAULT_FLINK_CLUSTER_IMAGE"), DEFAULT_FLINK_IMAGE)
   }
 
   def getFlinkParameters(cluster: FlinkCluster): FlinkParams = {
 
     // Image
-    val imageRef = cluster.getCustomImage match {
-      case value if value != null => value
-      case _ => getDefaultFlinkImage // from Constants
-    }
+    val imageRef = getSafeValueWithDefault(cluster.getCustomImage, getDefaultFlinkImage)
 
     // Master params
-    val masterParams = cluster.getMaster match {
-      case master if(master != null) =>
-        val memory = master.getMemory match {
-          case value if value != null => value
-          case _ => DEFAULT_JOBMANAGER_MEMORY
-        }
-        val cpu = master.getCpu match {
-          case value if value != null => value
-          case _ => DEFAULT_JOBMANAGER_CPU
-        }
-        (memory, cpu)
-      case _ => (DEFAULT_JOBMANAGER_MEMORY, DEFAULT_JOBMANAGER_CPU)
-    }
+    val masterParams = Option(cluster.getMaster).map{master =>
+        val memory = getSafeValueWithDefault(master.getMemory, DEFAULT_JOBMANAGER_MEMORY)
+        val cpu = getSafeValueWithDefault(master.getCpu, DEFAULT_JOBMANAGER_CPU)
+        (memory, cpu)}.getOrElse(DEFAULT_JOBMANAGER_MEMORY -> DEFAULT_JOBMANAGER_CPU)
 
     // worker params
-    val workerParams = cluster.getWorker match {
-      case worker if(worker != null) =>
-        val memory = worker.getMemory match {
-          case value if value != null => value
-          case _ => DEFAULT_TASKMANGER_MEMORY
-        }
-        val cpu = worker.getCpu match {
-          case value if value != null => value
-          case _ => DEFAULT_TASKMANGER_CPU
-        }
-        (memory, cpu)
-      case _ => (DEFAULT_TASKMANGER_MEMORY, DEFAULT_TASKMANGER_CPU)
-    }
+    val workerParams = Option(cluster.getWorker).map { worker =>
+      val memory = getSafeValueWithDefault(worker.getMemory, DEFAULT_TASKMANGER_MEMORY)
+      val cpu = getSafeValueWithDefault(worker.getCpu, DEFAULT_TASKMANGER_CPU)
+      memory -> cpu
+    }.getOrElse(DEFAULT_TASKMANGER_MEMORY ->  DEFAULT_TASKMANGER_CPU)
+
 
     // Flink params
-    val flinkP = cluster.getFlinkConfiguration match {
-      case conf if (conf != null) =>
-        ( conf.asScala.getOrElse("metric_query_port", "6170"),
-          conf.asScala.getOrElse("num_taskmanagers", DEFAULT_TASKMANAGER_INSTANCES),
-          conf.asScala.getOrElse("taskmanagers_slots", DEFAULT_TASKMANAGER_SLOTS))
-      case _ => ("6170", DEFAULT_TASKMANAGER_INSTANCES, DEFAULT_TASKMANAGER_SLOTS)
-    }
-    val check : Option[Persistence] = cluster.getCheckpointing match {
-      case value if (value == null) => None
-      case _ => Some(cluster.getCheckpointing)
-    }
-    val save : Option[Persistence] = cluster.getSavepointing match {
-      case value if (value == null) => None
-      case _ => Some(cluster.getSavepointing)
-    }
+    val flinkP = Option(cluster.getFlinkConfiguration).map { conf =>
+      val scalaConf = conf.asScala
+      (scalaConf.getOrElse("metric_query_port", "6170"),
+        scalaConf.getOrElse("num_taskmanagers", DEFAULT_TASKMANAGER_INSTANCES),
+        scalaConf.getOrElse("taskmanagers_slots", DEFAULT_TASKMANAGER_SLOTS))
+    }.getOrElse{("6170", DEFAULT_TASKMANAGER_INSTANCES, DEFAULT_TASKMANAGER_SLOTS)}
+
+    val check : Option[Persistence] = Option(cluster.getCheckpointing)
+
+    val save : Option[Persistence] = Option(cluster.getSavepointing)
 
     FlinkParams(flinkP._1, masterParams._1, workerParams._1, masterParams._2, workerParams._2,
       imageRef, flinkP._2.toInt, flinkP._3, check, save)

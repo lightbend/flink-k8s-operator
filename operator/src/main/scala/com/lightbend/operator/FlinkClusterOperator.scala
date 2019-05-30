@@ -12,7 +12,6 @@ import io.radanalytics.operator.resource.LabelsHelper._
 import scala.collection.mutable.{Map => MMap}
 import scala.collection.JavaConverters._
 
-
 @Operator(forKind = classOf[FlinkCluster], prefix = "lightbend.com", crd=true)
 class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
 
@@ -20,7 +19,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
 
   // Those can not created here because namespace is initiated later
   private val clusters = MMap[String, RunningClusters]()       // In order to support multiple namespaces (all namespace) we need map here
-  private var deployer : Option[KubernetesFlinkClusterDeployer] = Option.empty
+  private var deployer : Option[KubernetesFlinkClusterDeployer] = None
 
   // Init - initialize logger
   override protected def onInit(): Unit = {
@@ -65,6 +64,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
         onAddInternal(newCluster, namespace, DeploymentOptions())
       case _ =>
         isOnlyScale(existingCluster, newCluster) match {
+            // this could be an if expression
           case true => // This is just rescale
             log.info(s"Flink operator processing modify event for a cluster ${newCluster.getName}. Rescaling only")
             rescaleCluster(newCluster, namespace)
@@ -82,7 +82,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     val name = info.getMetadata.getName
     val namespace = info.getMetadata.getNamespace
     val mapper = new ObjectMapper
-    var infoSpec = mapper.convertValue(info.getSpec, classOf[FlinkCluster])
+    val infoSpec = mapper.convertValue(info.getSpec, classOf[FlinkCluster])
     if (infoSpec.getName == null) infoSpec.setName(name)
     if (infoSpec.getNamespace == null) infoSpec.setNamespace(namespace)
     infoSpec
@@ -206,9 +206,9 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     // Combine to cluster information
     masters.keys.toSeq.union(workers.keys.toSeq).union(mservices.keys.toSeq)
       .map(key => (key -> Deployed(
-          workers.get(key) match {case Some(w) => w; case _ => -1},
-          masters.get(key) match {case Some(m) => m; case _ => false},
-          mservices.get(key) match {case Some(s) => s; case _ => false}
+          workers.get(key).getOrElse(-1) ,
+          masters.get(key).getOrElse(false),
+          mservices.get(key).getOrElse(false)
       ))).toMap
   }
 
@@ -235,29 +235,30 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     val oldP = getFlinkParameters(oldC)
     val newP = getFlinkParameters(newC)
     newC.getFlinkConfiguration.put("num_taskmanagers", oldP.worker_instances.toString)
+    // I have the impression that this is condition is the opposite of the intention. ie. if old==new => no scale.
     oldC == newC
   }
 
-  private def getClusters(ns : String): RunningClusters = clusters.get(ns) match {
-    case Some(c) => c  // already exists
-    case _ =>
-      val c = new RunningClusters(ns)
-      clusters += (ns -> c)
-      c
-  }
+  private def getClusters(ns : String): RunningClusters = clusters.getOrElse(ns, {
+    val c = new RunningClusters(ns)
+    // Is this side effect intended? -- it makes it trickier to understand the code.
+    clusters += (ns -> c)
+    c
+  })
 
-  private def getDeployer(): KubernetesFlinkClusterDeployer = deployer match {
-    case Some(d) => d     // Already exists
-    case _ =>             // Create a new one
-      val d = new KubernetesFlinkClusterDeployer(client, entityName, prefix)
-      deployer = Option(d)
-      d
+
+  private def getDeployer(): KubernetesFlinkClusterDeployer = deployer.getOrElse {
+    val d = new KubernetesFlinkClusterDeployer(client, entityName, prefix)
+    // Is this side effect intended? -- it makes it trickier to understand the code.
+    deployer = Option(d)
+    d
   }
 }
 
 case class FullName(name: String, namespace: String){
   def equal(other: AnyRef): Boolean = {
     other match {
+        // we get the equivalent logic from the case class impl. Is this necessary?
       case fn : FullName => (name == fn.name) && (namespace == fn.namespace)
       case _ => false
     }
