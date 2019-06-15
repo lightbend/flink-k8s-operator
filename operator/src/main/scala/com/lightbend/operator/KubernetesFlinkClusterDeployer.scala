@@ -72,12 +72,15 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
       case Some(persistence) => envVars += envBuild("SavepointDir", persistence.getMountdirectory)
       case _ =>
     }
+    params.parallelism match {
+      case p if(p != 1)  => envVars += envBuild("parallelism", params.parallelism.toString)
+      case _ =>
+    }
     if (cluster.getEnv != null)
       cluster.getEnv.asScala.foreach(env => envVars += envBuild(env.getName, env.getValue))
 
     // Arguments
-    val args = if(cluster.getMaster != null && cluster.getMaster.getInputs != null)
-      cluster.getMaster.getInputs.asScala else List(OPERATOR_TYPE_MASTER_LABEL)
+    val args = params.master_args.toList
 
     // Liveness probe
     val masterLiveness = new ProbeBuilder()
@@ -95,7 +98,7 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
     // Container
     val containerBuilder = new ContainerBuilder()
       .withImage(params.imageRef)
-      .withImagePullPolicy("IfNotPresent")
+      .withImagePullPolicy(params.pullPolicy)
       .withName(OPERATOR_TYPE_MASTER_LABEL)
       .withTerminationMessagePolicy("File")
       .withEnv(envVars.asJava)
@@ -120,6 +123,16 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
         .build())
         volumes += new VolumeBuilder().withName(volume.getPvc).withPersistentVolumeClaim(
           new PersistentVolumeClaimVolumeSource(volume.getPvc, false)).build()
+      case _ =>
+    }
+    // Logging
+    params.logging match{
+      case logging if(logging != null) =>
+        containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
+          .withName("logging-config").withMountPath("/flink/config/logging").withReadOnly(true)
+          .build())
+        volumes += new VolumeBuilder().withName("logging-config").withConfigMap(
+          new ConfigMapVolumeSourceBuilder().withName(logging).build()).build()
       case _ =>
     }
 
@@ -180,6 +193,10 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
       case Some(persistence) => envVars += envBuild("SavepointDir", persistence.getMountdirectory)
       case _ =>
     }
+    params.parallelism match {
+      case p if(p != 1)  => envVars += envBuild("parallelism", params.parallelism.toString)
+      case _ =>
+    }
     if (cluster.getEnv != null)
       cluster.getEnv.asScala.foreach(env => envVars += envBuild(env.getName, env.getValue))
 
@@ -194,7 +211,7 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
     // Container
     val containerBuilder = new ContainerBuilder()
       .withImage(params.imageRef)
-      .withImagePullPolicy("IfNotPresent")
+      .withImagePullPolicy(params.pullPolicy)
       .withName(OPERATOR_TYPE_WORKER_LABEL)
       .withTerminationMessagePolicy("File")
       .withEnv(envVars.asJava)
@@ -218,6 +235,16 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
         .build())
         volumes += new VolumeBuilder().withName(volume.getPvc).withPersistentVolumeClaim(
           new PersistentVolumeClaimVolumeSource(volume.getPvc, false)).build()
+      case _ =>
+    }
+    // Logging
+    params.logging match{
+      case logging if(logging != null) =>
+        containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
+          .withName("logging-config").withMountPath("/flink/config/logging").withReadOnly(true)
+          .build())
+        volumes += new VolumeBuilder().withName("logging-config").withConfigMap(
+          new ConfigMapVolumeSourceBuilder().withName(logging).build()).build()
       case _ =>
     }
 

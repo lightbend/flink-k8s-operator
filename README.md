@@ -29,6 +29,8 @@ The following configurations is available for operator:
 * MetricsPort - port used by metrics http server (default - 8080)
 * InternalJvmMetrics - a boolean defining whether operator's internal JVM metrics is available through Prometheus (default - true)
 * Operator's resource requirements including memory requirement for an operator (default - 512Mi); cpu requirement for an operator (default - 1000m)
+* Checkpointing configuration, including PVC name and mount directory (default none)
+* Savepointing configuration, including PVC name and mount directory (default none)
 
 ## Basic commands
 
@@ -42,10 +44,9 @@ spec:
   flinkConfiguration:
     num_taskmanagers: "2"
     taskmanagers_slots: "2"
-
 ```
 
-If you want to create a cluster with the checkpointing volume mounted the template should be
+If you want to create a cluster with the checkpointing/savepointing volume mounted the template should be
 
 ````
 cat <<EOF | kubectl create -f -
@@ -60,7 +61,25 @@ spec:
   checkpointing:
     PVC : flink-operator-checkpointing
     mountdirectory: /flink/checkpoints
+  savepointing:
+    PVC : flink-operator-savepointing
+    mountdirectory: /flink/savepoints
     
+EOF
+````
+For using specific image the template should be
+````
+# create cluster
+cat <<EOF | kubectl create -f -
+apiVersion: lightbend.com/v1
+kind: FlinkCluster
+metadata:
+  name: my-cluster1
+spec:
+  flinkConfiguration:
+    num_taskmanagers: "2"
+    taskmanagers_slots: "2"
+  customImage: "lightbend/flink:1.8.0_scala_2.12_ubuntu"  
 EOF
 ````
 

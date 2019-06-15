@@ -67,7 +67,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
         isOnlyScale(existingCluster, newCluster) match {
           case true => // This is just rescale
             log.info(s"Flink operator processing modify event for a cluster ${newCluster.getName}. Rescaling only")
-            rescaleCluster(newCluster, namespace)
+            rescaleTakmanagersCluster(newCluster, namespace)
           case _ =>     // Recreate cluster with new parameters
             log.info(s"Recreating cluster  $name")
             val list = getDeployer().getResourceList(newCluster, namespace, DeploymentOptions())
@@ -103,8 +103,8 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     // Get actual workers
     val actual = getDeployed
 
-    log.debug(s"desired set: $desired")
-    log.debug(s"actual: $actual")
+//    log.info(s"desired set: $desired")
+//    log.info(s"actual: $actual")
 
     // Calculate to be created and deleted
     val toBeCreated = desired.keys.toList.filterNot(actual.keys.toSet)
@@ -138,9 +138,19 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
 
     // repair/ rescale
     desired.foreach(cluster => {
-      val state = actual.get(cluster._1).getOrElse(Deployed(-1, false, false))
+      val state = actual.get(cluster._1).getOrElse(Deployed(-1, -1, ""))
       var deployment = DeploymentOptions(false, false, false)
-      if (!state.master) deployment = DeploymentOptions(true, deployment.worker, deployment.service)
+      state.master match {
+        case actualMasters if (actualMasters > 0) => // may be rescale
+          actualMasters == 1 match {
+            case true => // Do nothing
+            case _ => // Rescale
+              change = true
+              rescaleJobManager(cluster._2, cluster._1.namespace)
+          }
+        case _ => // Recreate
+          deployment = DeploymentOptions(true, deployment.worker, deployment.service)
+      }
       state.worker match {
         case actualWorkers if (actualWorkers > 0) => // may be rescale
           val desiredWorkers = getFlinkParameters(cluster._2).worker_instances
@@ -148,13 +158,18 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
             case true => // Do nothing
             case _ => // Rescale
               change = true
-              rescaleCluster(cluster._2, cluster._1.namespace)
-
+              rescaleTakmanagersCluster(cluster._2, cluster._1.namespace)
           }
         case _ => // Recreate
           deployment = DeploymentOptions(deployment.master, true, deployment.service)
       }
-      if (!state.service) deployment = DeploymentOptions(deployment.master, deployment.worker, true)
+
+      state.service match {
+        case "" => deployment = DeploymentOptions(deployment.master, deployment.worker, true)
+        case _ =>  // log.info(s"Job manager service ${state.service}")
+
+      }
+
       deployment.todo() match {
         case true => // Need to repair
           onAddInternal(cluster._2, cluster._2.getNamespace, deployment)
@@ -196,28 +211,34 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     val slabels = Map("server" -> "flink", prefix + OPERATOR_KIND_LABEL -> entityName)
     // Get masters per name
     val masters = controllers.withLabels(mlabels.asJava).list.getItems.asScala.map(rc =>
-      FullName(rc.getMetadata.getLabels.get(prefix + entityName), rc.getMetadata.getNamespace) -> true).toMap
+      FullName(rc.getMetadata.getLabels.get(prefix + entityName), rc.getMetadata.getNamespace) -> rc.getSpec.getReplicas.intValue()).toMap
     // Get workers per name
     val workers = controllers.withLabels(wlabels.asJava).list.getItems.asScala.map(rc =>
       FullName(rc.getMetadata.getLabels.get(prefix + entityName), rc.getMetadata.getNamespace) -> rc.getSpec.getReplicas.intValue()).toMap
     // Get services per name
     val mservices = services.withLabels(slabels.asJava).list.getItems.asScala.map(s =>
-      FullName(s.getMetadata.getLabels.get(prefix + entityName), s.getMetadata.getNamespace) -> true).toMap
+      FullName(s.getMetadata.getLabels.get(prefix + entityName), s.getMetadata.getNamespace) -> s"${s.getMetadata.getName}.${s.getMetadata.getNamespace}.svc.cluster.local").toMap
     // Combine to cluster information
     masters.keys.toSeq.union(workers.keys.toSeq).union(mservices.keys.toSeq)
       .map(key => (key -> Deployed(
           workers.get(key) match {case Some(w) => w; case _ => -1},
-          masters.get(key) match {case Some(m) => m; case _ => false},
-          mservices.get(key) match {case Some(s) => s; case _ => false}
+          masters.get(key) match {case Some(m) => m; case _ => -1 },
+          mservices.get(key) match {case Some(s) => s; case _ => ""}
       ))).toMap
   }
 
-  // Rescale cluster
-  private def rescaleCluster(newCluster: FlinkCluster, ns : String) : Unit = {
+  // Rescale taskmanagers cluster
+  private def rescaleTakmanagersCluster(newCluster: FlinkCluster, ns : String) : Unit = {
     val newWorkers = getFlinkParameters(newCluster).worker_instances
     log.info(s"Cluster ${newCluster.getName} scaling to $newWorkers taskmanagers")
     client.replicationControllers.inNamespace(ns).withName(s"${newCluster.getName}-taskmanager").scale(newWorkers)
     getClusters(ns).update(newCluster)
+  }
+
+  // Rescale Job manager
+  private def rescaleJobManager(newCluster: FlinkCluster, ns : String) : Unit = {
+    log.info(s"Cluster ${newCluster.getName} scaling JobManageners")
+    client.replicationControllers.inNamespace(ns).withName(s"${newCluster.getName}-jobmanager").scale(1)
   }
 
   /**
@@ -268,4 +289,4 @@ case class DeploymentOptions(master: Boolean = true, worker : Boolean = true, se
   def todo() : Boolean = master || worker || service
 }
 
-case class Deployed(worker : Int, master: Boolean, service: Boolean)
+case class Deployed(worker : Int, master: Int, service: String)

@@ -53,6 +53,18 @@ object DataHelper {
             case value if (value != null) => flinkProps += ("taskmanagers_slots" -> value)
             case _ =>
           }
+          props.get("pullpolicy") match {
+            case value if (value != null) => flinkProps += ("pullpolicy" -> value)
+            case _ =>
+          }
+          props.get("parallelism") match {
+            case value if (value != null) => flinkProps += ("parallelism" -> value)
+            case _ =>
+          }
+          props.get("logging") match {
+            case value if (value != null) => flinkProps += ("logging" -> value)
+            case _ =>
+          }
           cluster.setFlinkConfiguration(flinkProps.asJava)
         case _ =>
       }

@@ -15,9 +15,13 @@ spec:
   flinkConfiguration:
     num_taskmanagers: "2"
     taskmanagers_slots: "2"
+    pullpolicy: "Always"
+    parallelism: "2"
+    logging : "flink-logging"
   worker:
     cpu: "2"
   master:
+    cpu: "2"
     inputs:
     - input1
     - input2

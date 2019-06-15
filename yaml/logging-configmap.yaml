@@ -1,0 +1,217 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flink-logging
+data:
+  log4j-cli.properties: >
+    log4j.rootLogger=INFO, file
+
+
+    # Log all infos in the given file
+
+    log4j.appender.file=org.apache.log4j.FileAppender
+
+    log4j.appender.file.file=${log.file}
+
+    log4j.appender.file.append=false
+
+    log4j.appender.file.layout=org.apache.log4j.PatternLayout
+
+    log4j.appender.file.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS}
+    %-5p %-60c %x - %m%n
+
+    # Log output from org.apache.flink.yarn to the console. This is used by the
+
+    # CliFrontend class when using a per-job YARN cluster.
+
+    log4j.logger.org.apache.flink.yarn=INFO, console
+
+    log4j.logger.org.apache.flink.yarn.cli.FlinkYarnSessionCli=INFO, console
+
+    log4j.logger.org.apache.hadoop=INFO, console
+
+
+    log4j.appender.console=org.apache.log4j.ConsoleAppender
+
+    log4j.appender.console.layout=org.apache.log4j.PatternLayout
+
+    log4j.appender.console.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS}
+    %-5p %-60c %x - %m%n
+
+
+    # suppress the warning that hadoop native libraries are not loaded
+    (irrelevant for the client)
+
+    log4j.logger.org.apache.hadoop.util.NativeCodeLoader=OFF
+
+
+    # suppress the irrelevant (wrong) warnings from the netty channel handler
+
+    log4j.logger.org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline=ERROR,
+    file
+  log4j-console.properties: >
+    # This affects logging for both user code and Flink
+
+    log4j.rootLogger=INFO, console
+
+
+    # Uncomment this if you want to _only_ change Flink's logging
+
+    #log4j.logger.org.apache.flink=INFO
+
+
+    # The following lines keep the log level of common libraries/connectors on
+
+    # log level INFO. The root logger does not override this. You have to
+    manually
+
+    # change the log levels here.
+
+    log4j.logger.akka=INFO
+
+    log4j.logger.org.apache.kafka=INFO
+
+    log4j.logger.org.apache.hadoop=INFO
+
+    log4j.logger.org.apache.zookeeper=INFO
+
+
+    # Log all infos to the console
+
+    log4j.appender.console=org.apache.log4j.ConsoleAppender
+
+    log4j.appender.console.layout=org.apache.log4j.PatternLayout
+
+    log4j.appender.console.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS}
+    %-5p %-60c %x - %m%n
+
+
+    # Suppress the irrelevant (wrong) warnings from the Netty channel handler
+
+    log4j.logger.org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline=ERROR,
+    console
+  log4j.properties: >
+    # This affects logging for both user code and Flink
+
+    log4j.rootLogger=INFO, file
+
+
+    # Uncomment this if you want to _only_ change Flink's logging
+
+    #log4j.logger.org.apache.flink=INFO
+
+
+    # The following lines keep the log level of common libraries/connectors on
+
+    # log level INFO. The root logger does not override this. You have to
+    manually
+
+    # change the log levels here.
+
+    log4j.logger.akka=INFO
+
+    log4j.logger.org.apache.kafka=INFO
+
+    log4j.logger.org.apache.hadoop=INFO
+
+    log4j.logger.org.apache.zookeeper=INFO
+
+
+    # Log all infos in the given file
+
+    log4j.appender.file=org.apache.log4j.FileAppender
+
+    log4j.appender.file.file=${log.file}
+
+    log4j.appender.file.append=false
+
+    log4j.appender.file.layout=org.apache.log4j.PatternLayout
+
+    log4j.appender.file.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS}
+    %-5p %-60c %x - %m%n
+
+
+    # Suppress the irrelevant (wrong) warnings from the Netty channel handler
+
+    log4j.logger.org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline=ERROR,
+    file
+  logback-console.xml: |
+    <configuration>
+        <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- This affects logging for both user code and Flink -->
+        <root level="INFO">
+            <appender-ref ref="console"/>
+        </root>
+
+        <!-- Uncomment this if you want to only change Flink's logging -->
+        <!--<logger name="org.apache.flink" level="INFO">-->
+            <!--<appender-ref ref="console"/>-->
+        <!--</logger>-->
+
+        <!-- The following lines keep the log level of common libraries/connectors on
+             log level INFO. The root logger does not override this. You have to manually
+             change the log levels here. -->
+        <logger name="akka" level="INFO">
+            <appender-ref ref="console"/>
+        </logger>
+        <logger name="org.apache.kafka" level="INFO">
+            <appender-ref ref="console"/>
+        </logger>
+        <logger name="org.apache.hadoop" level="INFO">
+            <appender-ref ref="console"/>
+        </logger>
+        <logger name="org.apache.zookeeper" level="INFO">
+            <appender-ref ref="console"/>
+        </logger>
+
+        <!-- Suppress the irrelevant (wrong) warnings from the Netty channel handler -->
+        <logger name="org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline" level="ERROR">
+            <appender-ref ref="console"/>
+        </logger>
+    </configuration>
+  logback.xml: |
+    <configuration>
+        <appender name="file" class="ch.qos.logback.core.FileAppender">
+            <file>${log.file}</file>
+            <append>false</append>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- This affects logging for both user code and Flink -->
+        <root level="INFO">
+            <appender-ref ref="file"/>
+        </root>
+
+        <!-- Uncomment this if you want to only change Flink's logging -->
+        <!--<logger name="org.apache.flink" level="INFO">-->
+            <!--<appender-ref ref="file"/>-->
+        <!--</logger>-->
+
+        <!-- The following lines keep the log level of common libraries/connectors on
+             log level INFO. The root logger does not override this. You have to manually
+             change the log levels here. -->
+        <logger name="akka" level="INFO">
+            <appender-ref ref="file"/>
+        </logger>
+        <logger name="org.apache.kafka" level="INFO">
+            <appender-ref ref="file"/>
+        </logger>
+        <logger name="org.apache.hadoop" level="INFO">
+            <appender-ref ref="file"/>
+        </logger>
+        <logger name="org.apache.zookeeper" level="INFO">
+            <appender-ref ref="file"/>
+        </logger>
+
+        <!-- Suppress the irrelevant (wrong) warnings from the Netty channel handler -->
+        <logger name="org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline" level="ERROR">
+            <appender-ref ref="file"/>
+        </logger>
+    </configuration>

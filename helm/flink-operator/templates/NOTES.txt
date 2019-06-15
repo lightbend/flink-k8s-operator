@@ -10,6 +10,13 @@ spec:
   flinkConfiguration:
     num_taskmanagers: "2"
     taskmanagers_slots: "2"
+  checkpointing:
+    PVC : flink-operator-checkpointing
+    mountdirectory: /flink/checkpointing
+  savepointing:
+    PVC : flink-operator-savepointing
+    mountdirectory: /flink/savepointing
+
 EOF
 
 For more details consult https://github.com/lightbend/fdp-flink-operator/blob/master/README.md

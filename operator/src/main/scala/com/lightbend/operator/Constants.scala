@@ -13,6 +13,8 @@ object Constants {
   val DEFAULT_JOBMANAGER_CPU = "2"
   val DEFAULT_TASKMANAGER_INSTANCES = "2"
   val DEFAULT_TASKMANAGER_SLOTS = "2"
+  val DEFAULT_PARALLELISM = "1"
+  val DEFAULT_PULL_POLICY = ""
   val OPERATOR_TYPE_MASTER_LABEL = "jobmanager"
   val OPERATOR_TYPE_WORKER_LABEL = "taskmanager"
 
@@ -42,8 +44,12 @@ object Constants {
           case value if value != null => value
           case _ => DEFAULT_JOBMANAGER_CPU
         }
-        (memory, cpu)
-      case _ => (DEFAULT_JOBMANAGER_MEMORY, DEFAULT_JOBMANAGER_CPU)
+        val inputs = master.getInputs match {
+          case value if (value != null) && (value.size() > 0) => value.asScala
+          case _ => Seq(OPERATOR_TYPE_MASTER_LABEL)
+        }
+        (memory, cpu, inputs)
+      case _ => (DEFAULT_JOBMANAGER_MEMORY, DEFAULT_JOBMANAGER_CPU, Seq(OPERATOR_TYPE_MASTER_LABEL))
     }
 
     // worker params
@@ -64,10 +70,15 @@ object Constants {
     // Flink params
     val flinkP = cluster.getFlinkConfiguration match {
       case conf if (conf != null) =>
-        ( conf.asScala.getOrElse("metric_query_port", "6170"),
-          conf.asScala.getOrElse("num_taskmanagers", DEFAULT_TASKMANAGER_INSTANCES),
-          conf.asScala.getOrElse("taskmanagers_slots", DEFAULT_TASKMANAGER_SLOTS))
-      case _ => ("6170", DEFAULT_TASKMANAGER_INSTANCES, DEFAULT_TASKMANAGER_SLOTS)
+        val confs = conf.asScala
+        ( confs.getOrElse("metric_query_port", "6170"),
+          confs.getOrElse("num_taskmanagers", DEFAULT_TASKMANAGER_INSTANCES),
+          confs.getOrElse("taskmanagers_slots", DEFAULT_TASKMANAGER_SLOTS),
+          confs.getOrElse("pullpolicy", DEFAULT_PULL_POLICY),
+          confs.getOrElse("parallelism", DEFAULT_PARALLELISM),
+          confs.getOrElse("logging", null.asInstanceOf[String])
+        )
+      case _ => ("6170", DEFAULT_TASKMANAGER_INSTANCES, DEFAULT_TASKMANAGER_SLOTS, DEFAULT_PULL_POLICY, DEFAULT_PARALLELISM, null.asInstanceOf[String])
     }
     val check : Option[Persistence] = cluster.getCheckpointing match {
       case value if (value == null) => None
@@ -78,11 +89,13 @@ object Constants {
       case _ => Some(cluster.getSavepointing)
     }
 
-    FlinkParams(flinkP._1, masterParams._1, workerParams._1, masterParams._2, workerParams._2,
-      imageRef, flinkP._2.toInt, flinkP._3, check, save)
+    FlinkParams(flinkP._1, masterParams._1, workerParams._1, masterParams._2, workerParams._2, masterParams._3,
+      flinkP._2.toInt, flinkP._3, imageRef, flinkP._4, flinkP._5.toInt, flinkP._6, check, save)
   }
 }
 
 case class FlinkParams(metric_query_port : String, master_memory : String, worker_memory : String,
-                       master_cpu : String, worker_cpu : String, imageRef : String, worker_instances : Int,
-                       worker_slots : String, checkpointing : Option[Persistence], savepointing : Option[Persistence])
+                       master_cpu : String, worker_cpu : String, master_args : Seq[String],
+                       worker_instances : Int, worker_slots : String, imageRef : String, pullPolicy : String,
+                       parallelism : Int, logging : String,
+                       checkpointing : Option[Persistence], savepointing : Option[Persistence])
