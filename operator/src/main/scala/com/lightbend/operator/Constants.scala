@@ -21,12 +21,12 @@ object Constants {
   val OPERATOR_TYPE_MASTER_LABEL = "jobmanager"
   val OPERATOR_TYPE_WORKER_LABEL = "taskmanager"
   val CHECKPOINTING_DIRECTORY = "/flink/checkpointing"
-  val CHECKPOINTING_ENVIRONMENT = "checkpointdir"
+  val CHECKPOINTING_ENVIRONMENT = "CHECKPOINTDIR"
   val SAVEPOINTING_DIRECTORY = "/flink/savepointing"
-  val SAVEPOINTING_ENVIRONMENT = "savepointdir"
+  val SAVEPOINTING_ENVIRONMENT = "SAVEPOINTDIR"
   val LOGGING_CONFIG_DIRECTORY = "/flink/config/logging"
-  val LOGGING_ENVIRONMENT = "logconfigdir"
-
+  val LOGGING_ENVIRONMENT = "LOGCONFIGDIR"
+  val PARALLELISM_ENV_VAR = "PARALLELISM"
   val FLINK_CONFIG_DIR = "/opt/flink/conf"
 
   def getFlinkParameters(cluster: FlinkCluster): FlinkParams = {

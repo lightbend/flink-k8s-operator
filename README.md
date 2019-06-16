@@ -68,9 +68,9 @@ Note that parameter's name and value should be specified on different lines
     * envname - name used to set mountdirectory as environment variable
 
 The following are generated environment variables    
-* `logconfigdir` for logging definition files
-* `checkpointdir` for checkpointing directory
-* `savepointdir` for savepointing directory
+* `LOGCONFIGDIR` for logging definition files
+* `CHECKPOINTDIR` for checkpointing directory
+* `SAVEPOINTDIR` for savepointing directory
 
 
 ## Basic commands

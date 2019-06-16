@@ -66,7 +66,7 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
     envVars += envBuild("JOB_MANAGER_RPC_ADDRESS", s"$name-$OPERATOR_TYPE_MASTER_LABEL")
     params.mounts.foreach (mount => envVars += envBuild(mount.getEnvname, mount.getMountdirectory))
     params.parallelism match {
-      case p if(p != 1)  => envVars += envBuild("parallelism", params.parallelism.toString)
+      case p if(p != 1)  => envVars += envBuild(Constants.PARALLELISM_ENV_VAR, params.parallelism.toString)
       case _ =>
     }
     if (cluster.getEnv != null)
@@ -105,20 +105,20 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
     params.mounts foreach{mount =>
       val readonly = mount.getResourcetype match {
         case v if v.equalsIgnoreCase("PVC") =>
-          volumes += new VolumeBuilder().withName(mount.getEnvname).withPersistentVolumeClaim(
+          volumes += new VolumeBuilder().withName(mount.getEnvname.toLowerCase).withPersistentVolumeClaim(
             new PersistentVolumeClaimVolumeSource(mount.getResourcename, false)).build()
           false
         case v if v.equalsIgnoreCase("CONFIGMAP") =>
-          volumes += new VolumeBuilder().withName(mount.getEnvname).withConfigMap(
+          volumes += new VolumeBuilder().withName(mount.getEnvname.toLowerCase.toLowerCase).withConfigMap(
             new ConfigMapVolumeSourceBuilder().withName(mount.getResourcename).build()).build()
           true
         case _ =>
-          volumes += new VolumeBuilder().withName(mount.getEnvname).withSecret(
+          volumes += new VolumeBuilder().withName(mount.getEnvname.toLowerCase).withSecret(
             new SecretVolumeSourceBuilder().withSecretName(mount.getResourcename).build()).build()
           true
       }
       containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
-        .withName(mount.getEnvname).withMountPath(mount.getMountdirectory).withReadOnly(readonly)
+        .withName(mount.getEnvname.toLowerCase).withMountPath(mount.getMountdirectory).withReadOnly(readonly)
         .build())
     }
 
@@ -173,7 +173,7 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
         new ObjectFieldSelectorBuilder().withFieldPath("status.podIP").build()).build()).build
     params.mounts.foreach (mount => envVars += envBuild(mount.getEnvname, mount.getMountdirectory))
     params.parallelism match {
-      case p if(p != 1)  => envVars += envBuild("parallelism", params.parallelism.toString)
+      case p if(p != 1)  => envVars += envBuild(Constants.PARALLELISM_ENV_VAR, params.parallelism.toString)
       case _ =>
     }
     if (cluster.getEnv != null)
@@ -203,20 +203,20 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
     params.mounts foreach{mount =>
       val readonly = mount.getResourcetype match {
         case v if v.equalsIgnoreCase("PVC") =>
-          volumes += new VolumeBuilder().withName(mount.getEnvname).withPersistentVolumeClaim(
+          volumes += new VolumeBuilder().withName(mount.getEnvname.toLowerCase).withPersistentVolumeClaim(
             new PersistentVolumeClaimVolumeSource(mount.getResourcename, false)).build()
           false
         case v if v.equalsIgnoreCase("CONFIGMAP") =>
-          volumes += new VolumeBuilder().withName(mount.getEnvname).withConfigMap(
+          volumes += new VolumeBuilder().withName(mount.getEnvname.toLowerCase).withConfigMap(
             new ConfigMapVolumeSourceBuilder().withName(mount.getResourcename).build()).build()
           true
         case _ =>
-          volumes += new VolumeBuilder().withName(mount.getEnvname).withSecret(
+          volumes += new VolumeBuilder().withName(mount.getEnvname.toLowerCase).withSecret(
             new SecretVolumeSourceBuilder().withSecretName(mount.getResourcename).build()).build()
           true
       }
       containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
-        .withName(mount.getEnvname).withMountPath(mount.getMountdirectory).withReadOnly(readonly)
+        .withName(mount.getEnvname.toLowerCase).withMountPath(mount.getMountdirectory).withReadOnly(readonly)
         .build())
     }
 
