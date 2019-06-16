@@ -8,7 +8,7 @@ This operator uses [abstract-operator](https://github.com/jvm-operators/abstract
 ## Building and Packaging
 
 The operator is implemented in the operator module. The model contains both
-[json definition of the CRD](operator/resources/schema/flinkCluster.json) and the actual
+[json definition of the CRD](schema/flinkCluster.json) and the actual
 implementation code.
 
 Building and creation of the docker image can be done running command:
@@ -32,23 +32,51 @@ The following configurations is available for operator:
 * Checkpointing configuration, including PVC name and mount directory (default none)
 * Savepointing configuration, including PVC name and mount directory (default none)
 
+## Cluster's specification
+
+Cluster can be configured using the following components:
+* customImage defines two parameters parameters:
+    * imagename - name of the image to use for cluster (same image is used for both job manager and task manager) - default is `lightbend/flink:1.8.0_scala_2.11_debian`
+    * pullpolicy - image pull policy - default is `IfNotPresent`
+* flinkConfiguration defines cluster specific configuration
+    * num_taskmanagers - number of task managers (integer) - default is `2`
+    * taskmanagers_slots - number of slots per task managers (integer) - default is `2`
+    * parallelism - default parallelism for Flink application (integer) - default is `1`
+    * metrics - defines wheater to expose cluster's metrics via Prometheus - default `true`
+    * logging - name of the configmap with the overwrites for logging (see [sample](/yaml/logging-configmap.yaml) of all the files and their data). If not specified, default Flink configuration is used 
+    * checkpointing - name of the PVC used for checkpointing. If it is specified Flink HA is used, if not specified, external checkpointing is not supported and no HA is used
+    * savepointing - name of the PVC used for savepointing. If it is specified savepointing is not supported. 
+* master defines specification for jobmanager
+    * cpu - amount of cpus per instance (string), default `"2"`
+    * memory - amount of memory per instance (string), default `"1024"`
+    * inputs - array of inputs used for job manager. If not specified - a session cluster is started. To start a job cluster inputs should contain         
+````
+    - jobcluster                                                                                                                                                       
+    - name of the main job class
+    - parameters
+````
+Note that parameter's name and value should be specified on different lines
+* worker defines specification for taskmanager
+    * cpu - amount of cpus per instance (string), default `"4"`
+    * memory - amount of memory per instance (string), default `"2048"`
+* labels - list of additional labels (key/values), see example [here](yaml/cluster_complete.yaml)
+* env - list of additional environment variables (key/values), see example [here](yaml/cluster_complete.yaml)
+* mounts - list of additional mounts (`PVC`, `ConfigMap`, `Secret`). Every mount is defined by the following parameters, all of which should be present:
+    * resourcetype - type of mounted resource. Supported values are `PVC`, `ConfigMap`, `Secret` (not case sensitive). Any other resource type will be ignored
+    * resourcename - name of the resource (the resource should exist)
+    * mountdirectory - directory at which resource is mounted. If this directory is `/opt/flink/conf`, the resource will be ignored to avoid overriding Flink's native configuration. Additionally `PVC` resources are mounted as `read/write, while`, while `configMap` and `Secret` are mounted as `readdOnly`
+    * envname - name used to set mountdirectory as environment variable
+
+The following are generated environment variables    
+* `logconfigdir` for logging definition files
+* `checkpointdir` for checkpointing directory
+* `savepointdir` for savepointing directory
+
+
 ## Basic commands
 
-To create a cluster, create a YAML file (let's call this one `flink-app.yaml`) with something similar to this template:
+To create a cluster, execute the following command:
 ```
-apiVersion: lightbend.com/v1
-kind: FlinkCluster
-metadata:
-  name: my-cluster
-spec:
-  flinkConfiguration:
-    num_taskmanagers: "2"
-    taskmanagers_slots: "2"
-```
-
-If you want to create a cluster with the checkpointing/savepointing volume mounted the template should be
-
-````
 cat <<EOF | kubectl create -f -
 apiVersion: lightbend.com/v1
 kind: FlinkCluster
@@ -56,43 +84,27 @@ metadata:
   name: my-cluster
 spec:
   flinkConfiguration:
-    num_taskmanagers: "2"
-    taskmanagers_slots: "2"
-  checkpointing:
-    PVC : flink-operator-checkpointing
-    mountdirectory: /flink/checkpoints
-  savepointing:
-    PVC : flink-operator-savepointing
-    mountdirectory: /flink/savepoints
-    
+    num_taskmanagers: 1
+    taskmanagers_slots: 2
+    parallelism: 2
+    logging : "flink-logging"
+    checkpointing: "flink-operator-checkpointing"
+    savepointing: "flink-operator-savepointing"
+  worker:
+    cpu: "1"
+  master:
+    cpu: "1"    
+  mounts:
+    - resourcetype: "secret"
+      resourcename: "strimzi-clients-ca-cert"
+      mountdirectory: "/etc/tls-sidecar/cluster-ca-certs/"
+      envname : "my-secret"
 EOF
-````
-For using specific image the template should be
-````
-# create cluster
-cat <<EOF | kubectl create -f -
-apiVersion: lightbend.com/v1
-kind: FlinkCluster
-metadata:
-  name: my-cluster1
-spec:
-  flinkConfiguration:
-    num_taskmanagers: "2"
-    taskmanagers_slots: "2"
-  customImage: "lightbend/flink:1.8.0_scala_2.12_ubuntu"  
-EOF
-````
-
-Then, this YAML file can be applied to a Kubernetes cluster, using `kubectl`
 ```
-kubectl create -f flink-app.yaml
-```
-
-Additional parameters can be added. See [example](yaml/cluster_complete.yaml)
+Additional parameters can be added as described above
 
 By default a Flink [session cluster](https://ci.apache.org/projects/flink/flink-docs-stable/ops/deployment/kubernetes.html#flink-session-cluster-on-kubernetes) will be created
 (a default argument *taskmanager* will be generated in this case).
-Alternatively you can explicitly specify the *taskmanager* and any additional arguments in the master inputs.
 
 If you want to run Flink [job cluster](https://ci.apache.org/projects/flink/flink-docs-stable/ops/deployment/kubernetes.html#flink-job-cluster-on-kubernetes) specify
 *jobcluster* cluster as an input followed by the name of the main class for a job and the list of parameters.
@@ -132,17 +144,29 @@ Annotations:  <none>
 API Version:  lightbend.com/v1
 Kind:         FlinkCluster
 Metadata:
-  Cluster Name:        
-  Creation Timestamp:  2019-03-20T19:00:29Z
+  Creation Timestamp:  2019-06-16T15:21:27Z
   Generation:          1
-  Resource Version:    12312782
+  Resource Version:    11087658
   Self Link:           /apis/lightbend.com/v1/namespaces/flink/flinkclusters/my-cluster
-  UID:                 6e16a9f4-4b42-11e9-bb33-0643529e7baa
+  UID:                 68f50b35-904a-11e9-9719-065625d6fbaa
 Spec:
   Flink Configuration:
-    Num _ Taskmanagers:    2
+    Checkpointing:         flink-operator-checkpointing
+    Logging:               flink-logging
+    Num _ Taskmanagers:    1
+    Parallelism:           2
+    Savepointing:          flink-operator-savepointing
     Taskmanagers _ Slots:  2
-Events:                    <none>
+  Master:
+    Cpu:  1
+  Mounts:
+    Envname:         my-secret
+    Mountdirectory:  /etc/tls-sidecar/cluster-ca-certs/
+    Resourcename:    strimzi-clients-ca-cert
+    Resourcetype:    secret
+  Worker:
+    Cpu:  1
+Events:   <none>
 ````
 You can also get information about all running clusters running the following:
 ````
@@ -154,17 +178,29 @@ Annotations:  <none>
 API Version:  lightbend.com/v1
 Kind:         FlinkCluster
 Metadata:
-  Cluster Name:        
-  Creation Timestamp:  2019-03-20T19:00:29Z
+  Creation Timestamp:  2019-06-16T15:21:27Z
   Generation:          1
-  Resource Version:    12312782
+  Resource Version:    11087658
   Self Link:           /apis/lightbend.com/v1/namespaces/flink/flinkclusters/my-cluster
-  UID:                 6e16a9f4-4b42-11e9-bb33-0643529e7baa
+  UID:                 68f50b35-904a-11e9-9719-065625d6fbaa
 Spec:
   Flink Configuration:
-    Num _ Taskmanagers:    2
+    Checkpointing:         flink-operator-checkpointing
+    Logging:               flink-logging
+    Num _ Taskmanagers:    1
+    Parallelism:           2
+    Savepointing:          flink-operator-savepointing
     Taskmanagers _ Slots:  2
-Events:                    <none>
+  Master:
+    Cpu:  1
+  Mounts:
+    Envname:         my-secret
+    Mountdirectory:  /etc/tls-sidecar/cluster-ca-certs/
+    Resourcename:    strimzi-clients-ca-cert
+    Resourcetype:    secret
+  Worker:
+    Cpu:  1
+Events:   <none>
 ````
 
 To modify the cluster, run the following:
@@ -176,10 +212,11 @@ cat <<EOF | kubectl replace -f -
 >   name: my-cluster
 > spec:
 >   flinkConfiguration:
->     num_taskmanagers: "3"
->     taskmanagers_slots: "2"
+>     num_taskmanagers: 3
+>     taskmanagers_slots: 2
 > EOF
 ````
+Keep in mind that replace command is not commulative. You need to specify all of the parameters, even if they existed in the original cluster
 
 To delete the cluster, run the following:
 ````

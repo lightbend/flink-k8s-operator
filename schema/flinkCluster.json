@@ -14,31 +14,25 @@
       "$ref": "#/definitions/RCSpec"
     },
     "customImage": {
-      "type": "string"
-    },
-    "metrics": {
-      "type": "boolean",
-      "default": "true"
+      "$ref": "#/definitions/Image"
     },
     "env": {
       "$ref": "#/definitions/NameValue"
     },
     "flinkConfiguration": {
-      "existingJavaType" : "java.util.Map<String,String>",
-      "type" : "object"
+      "$ref": "#/definitions/FlinkConfiguration"
     },
     "labels" : {
       "existingJavaType" : "java.util.Map<String,String>",
       "type" : "object"
     },
-    "checkpointing": {
-      "$ref": "#/definitions/Persistence"
-    },
-    "savepointing": {
-      "$ref": "#/definitions/Persistence"
+    "mounts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Mount"
+      }
     }
   },
-  "required": [ "master", "worker"],
   "definitions": {
     "RCSpec": {
       "type": "object",
@@ -57,16 +51,62 @@
         }
       }
     },
-    "Persistence": {
+    "FlinkConfiguration": {
       "type": "object",
       "properties": {
-        "PVC": {
+        "num_taskmanagers": {
+          "type": "integer"
+        },
+        "taskmanager_slot": {
+          "type": "integer"
+        },
+        "parallelism": {
+          "type": "integer"
+        },
+        "metrics": {
+          "type" : "boolean",
+          "default": "true"
+        },
+        "logging": {
+          "type": "string"
+        },
+        "checkpointing": {
+          "type": "string"
+        },
+        "savepointing": {
+          "type": "string"
+        }
+      }
+    },
+    "Mount": {
+      "type": "object",
+      "properties": {
+        "resourcetype": {
+          "type": "string"
+        },
+        "resourcename": {
           "type": "string"
         },
         "mountdirectory": {
           "type": "string"
+        },
+        "envname": {
+          "type": "string"
         }
-      }
+      },
+      "required": ["resourcetype", "resourcename", "mountdirectory", "envname"]
+    },
+    "Image": {
+      "type": "object",
+      "properties": {
+        "imagename": {
+          "type": "string"
+        },
+        "pullpolicy": {
+          "type": "string"
+        }
+      },
+      "required": ["imagename"]
     },
     "NameValue": {
       "type": "array",

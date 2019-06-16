@@ -4,4 +4,5 @@ object Versions {
   val abstractOperatorVersion   = "0.6.5"
   val jsonGeneratorVersion      = "1.0.1"
   val junitVersion              = "4.12"
+  val scalaHTTPVersion          = "2.4.1"
 }

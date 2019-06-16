@@ -12,7 +12,7 @@ class RunningClusters (namespace: String){
   private val log = LoggerFactory.getLogger(classOf[RunningClusters].getName)
 
   log.info(s"Creating clusters map for the namespace $namespace")
-  val clusters : Map[String, FlinkCluster]= Map()
+  val clusters = Map[String, FlinkCluster]()
   runningClusters.labels(namespace).set(0)
 
   def put(c: FlinkCluster): Unit = {

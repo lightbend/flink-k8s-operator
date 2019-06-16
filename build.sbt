@@ -38,7 +38,7 @@ def sbtdockerAppBase(id: String)(base: String = id): Project = Project(id, base 
 lazy val operator = sbtdockerAppBase("fdp-flink-operator")("./operator")
   .enablePlugins(ModelGeneratorPlugin)
   .settings(
-    libraryDependencies ++= Seq(abstractOperator, junit),
+    libraryDependencies ++= Seq(abstractOperator, scalaHTTP, junit),
     modelSchemaLocation := "./schema/flinkCluster.json",
     (compile in Compile) := ((compile in Compile) dependsOn generateModel).value,
     mainClass in Compile := Some("io.radanalytics.operator.Entrypoint")

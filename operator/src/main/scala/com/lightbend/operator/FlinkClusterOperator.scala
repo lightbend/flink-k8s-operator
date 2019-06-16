@@ -24,7 +24,6 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
 
   // Init - initialize logger
   override protected def onInit(): Unit = {
-    log.info(s"${this.entityName} operator default flink image ${Constants.getDefaultFlinkImage}")
   }
 
   // Add event, just deploy a new cluster
@@ -102,9 +101,6 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     val desired = super.getDesiredSet.asScala.map(cluster => (FullName(cluster.getName, cluster.getNamespace) -> cluster)).toMap
     // Get actual workers
     val actual = getDeployed
-
-//    log.info(s"desired set: $desired")
-//    log.info(s"actual: $actual")
 
     // Calculate to be created and deleted
     val toBeCreated = desired.keys.toList.filterNot(actual.keys.toSet)
@@ -255,7 +251,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     // Get parameters
     val oldP = getFlinkParameters(oldC)
     val newP = getFlinkParameters(newC)
-    newC.getFlinkConfiguration.put("num_taskmanagers", oldP.worker_instances.toString)
+    newC.getFlinkConfiguration.setNumTaskmanagers(oldP.worker_instances)
     oldC == newC
   }
 

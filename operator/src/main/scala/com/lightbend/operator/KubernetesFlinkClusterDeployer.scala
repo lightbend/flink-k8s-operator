@@ -64,14 +64,7 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
     envVars += envBuild("CONTAINER_METRIC_PORT", params.metric_query_port)
     envVars += envBuild("JOBMANAGER_MEMORY", s"${params.master_memory}m")
     envVars += envBuild("JOB_MANAGER_RPC_ADDRESS", s"$name-$OPERATOR_TYPE_MASTER_LABEL")
-    params.checkpointing match {
-      case Some(persistence) => envVars += envBuild("CheckpointDir", persistence.getMountdirectory)
-      case _ =>
-    }
-    params.savepointing match {
-      case Some(persistence) => envVars += envBuild("SavepointDir", persistence.getMountdirectory)
-      case _ =>
-    }
+    params.mounts.foreach (mount => envVars += envBuild(mount.getEnvname, mount.getMountdirectory))
     params.parallelism match {
       case p if(p != 1)  => envVars += envBuild("parallelism", params.parallelism.toString)
       case _ =>
@@ -107,38 +100,31 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
       .withArgs(args.asJava)
       .withResources(new ResourceRequirementsBuilder().withLimits(limits.asJava).build())
 
-    // Persistence
+    // Mounts
     val volumes = new ListBuffer[Volume]
-    params.checkpointing match{
-      case Some(volume) => containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
-        .withName(volume.getPvc).withMountPath(volume.getMountdirectory).withReadOnly(false)
+    params.mounts foreach{mount =>
+      val readonly = mount.getResourcetype match {
+        case v if v.equalsIgnoreCase("PVC") =>
+          volumes += new VolumeBuilder().withName(mount.getEnvname).withPersistentVolumeClaim(
+            new PersistentVolumeClaimVolumeSource(mount.getResourcename, false)).build()
+          false
+        case v if v.equalsIgnoreCase("CONFIGMAP") =>
+          volumes += new VolumeBuilder().withName(mount.getEnvname).withConfigMap(
+            new ConfigMapVolumeSourceBuilder().withName(mount.getResourcename).build()).build()
+          true
+        case _ =>
+          volumes += new VolumeBuilder().withName(mount.getEnvname).withSecret(
+            new SecretVolumeSourceBuilder().withSecretName(mount.getResourcename).build()).build()
+          true
+      }
+      containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
+        .withName(mount.getEnvname).withMountPath(mount.getMountdirectory).withReadOnly(readonly)
         .build())
-        volumes += new VolumeBuilder().withName(volume.getPvc).withPersistentVolumeClaim(
-          new PersistentVolumeClaimVolumeSource(volume.getPvc, false)).build()
-      case _ =>
-    }
-    params.savepointing match{
-      case Some(volume) => containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
-        .withName(volume.getPvc).withMountPath(volume.getMountdirectory).withReadOnly(false)
-        .build())
-        volumes += new VolumeBuilder().withName(volume.getPvc).withPersistentVolumeClaim(
-          new PersistentVolumeClaimVolumeSource(volume.getPvc, false)).build()
-      case _ =>
-    }
-    // Logging
-    params.logging match{
-      case logging if(logging != null) =>
-        containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
-          .withName("logging-config").withMountPath("/flink/config/logging").withReadOnly(true)
-          .build())
-        volumes += new VolumeBuilder().withName("logging-config").withConfigMap(
-          new ConfigMapVolumeSourceBuilder().withName(logging).build()).build()
-      case _ =>
     }
 
     // Metrics
     var annotations = Map[String, String]()
-    if (cluster.getMetrics) {
+    if (params.metrics) {
       annotations = annotations + (("prometheus.io/scrape" -> "true"), ("prometheus.io/port" -> "9249"))
     }
 
@@ -180,19 +166,12 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
     var envVars = new ListBuffer[EnvVar]()
     envVars += envBuild("CONTAINER_METRIC_PORT", params.metric_query_port)
     envVars += envBuild("TASKMANAGER_MEMORY", s"${params.worker_memory}m")
-    envVars += envBuild("TASKMANAGER_SLOTS", params.worker_slots)
+    envVars += envBuild("TASKMANAGER_SLOTS", params.worker_slots.toString)
     envVars += envBuild("JOB_MANAGER_RPC_ADDRESS", s"$name-$OPERATOR_TYPE_MASTER_LABEL")
     envVars += new EnvVarBuilder().withName("K8S_POD_IP").withValueFrom(
       new EnvVarSourceBuilder().withFieldRef(
         new ObjectFieldSelectorBuilder().withFieldPath("status.podIP").build()).build()).build
-    params.checkpointing match {
-      case Some(persistence) => envVars += envBuild("CheckpointDir", persistence.getMountdirectory)
-      case _ =>
-    }
-    params.savepointing match {
-      case Some(persistence) => envVars += envBuild("SavepointDir", persistence.getMountdirectory)
-      case _ =>
-    }
+    params.mounts.foreach (mount => envVars += envBuild(mount.getEnvname, mount.getMountdirectory))
     params.parallelism match {
       case p if(p != 1)  => envVars += envBuild("parallelism", params.parallelism.toString)
       case _ =>
@@ -219,38 +198,31 @@ class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: Strin
       .withArgs(args.asJava)
       .withResources(new ResourceRequirementsBuilder().withLimits(limits.asJava).build())
 
-    // Persistence
+    // Mounts
     val volumes = new ListBuffer[Volume]
-    params.checkpointing match{
-      case Some(volume) => containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
-        .withName(volume.getPvc).withMountPath(volume.getMountdirectory).withReadOnly(false)
+    params.mounts foreach{mount =>
+      val readonly = mount.getResourcetype match {
+        case v if v.equalsIgnoreCase("PVC") =>
+          volumes += new VolumeBuilder().withName(mount.getEnvname).withPersistentVolumeClaim(
+            new PersistentVolumeClaimVolumeSource(mount.getResourcename, false)).build()
+          false
+        case v if v.equalsIgnoreCase("CONFIGMAP") =>
+          volumes += new VolumeBuilder().withName(mount.getEnvname).withConfigMap(
+            new ConfigMapVolumeSourceBuilder().withName(mount.getResourcename).build()).build()
+          true
+        case _ =>
+          volumes += new VolumeBuilder().withName(mount.getEnvname).withSecret(
+            new SecretVolumeSourceBuilder().withSecretName(mount.getResourcename).build()).build()
+          true
+      }
+      containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
+        .withName(mount.getEnvname).withMountPath(mount.getMountdirectory).withReadOnly(readonly)
         .build())
-        volumes += new VolumeBuilder().withName(volume.getPvc).withPersistentVolumeClaim(
-          new PersistentVolumeClaimVolumeSource(volume.getPvc, false)).build()
-      case _ =>
-    }
-    params.savepointing match{
-      case Some(volume) => containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
-        .withName(volume.getPvc).withMountPath(volume.getMountdirectory).withReadOnly(false)
-        .build())
-        volumes += new VolumeBuilder().withName(volume.getPvc).withPersistentVolumeClaim(
-          new PersistentVolumeClaimVolumeSource(volume.getPvc, false)).build()
-      case _ =>
-    }
-    // Logging
-    params.logging match{
-      case logging if(logging != null) =>
-        containerBuilder.addToVolumeMounts(new VolumeMountBuilder()
-          .withName("logging-config").withMountPath("/flink/config/logging").withReadOnly(true)
-          .build())
-        volumes += new VolumeBuilder().withName("logging-config").withConfigMap(
-          new ConfigMapVolumeSourceBuilder().withName(logging).build()).build()
-      case _ =>
     }
 
     // Metrics
     var annotations = Map[String, String]()
-    if (cluster.getMetrics) {
+    if (params.metrics) {
       annotations = annotations + (("prometheus.io/scrape" -> "true"), ("prometheus.io/port" -> "9249"))
     }
 

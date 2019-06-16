@@ -15,7 +15,7 @@ class YamlProcessingTest extends TestCase{
   private val client = new DefaultKubernetesClient
 
   @Test
-  def testParseYaml1(): Unit = {
+  def testParseYaml(): Unit = {
 
     val schema = JSONSchemaReader.readSchema(classOf[FlinkCluster])
     println(schema)

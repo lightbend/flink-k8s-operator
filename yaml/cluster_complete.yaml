@@ -4,8 +4,9 @@ metadata:
   namespace: nm
   name: my-flink-cluster
 spec:
-  metrics : true
-  customImage : myimage
+  customImage :
+    imagename: myimage
+    pullpolicy: "Always"
   labels:
     common-label-for-all-the-resources-operator-deploys/deployed-by: john
     common-label-to-be-replaced-on-some-resources: global-value
@@ -13,11 +14,12 @@ spec:
   - name: ENV1
     value: env1
   flinkConfiguration:
-    num_taskmanagers: "2"
-    taskmanagers_slots: "2"
-    pullpolicy: "Always"
-    parallelism: "2"
+    num_taskmanagers: 2
+    taskmanagers_slots: 2
+    parallelism: 2
     logging : "flink-logging"
+    checkpointing: "checkpvcname"
+    savepointing: "savepvcname"
   worker:
     cpu: "2"
   master:
@@ -25,9 +27,16 @@ spec:
     inputs:
     - input1
     - input2
-  checkpointing:
-    PVC : checkpvcname
-    mountdirectory: checkdirectory
-  savepointing:
-    PVC : savepvcname
-    mountdirectory: savedirectory
+  mounts:
+    - resourcetype: "secret"
+      resourcename: "myresource"
+      mountdirectory: "directory"
+      envname : "name"
+    - resourcetype: "pvc"
+      resourcename: "myresource1"
+      mountdirectory: "directory1"
+      envname : "name1"
+    - resourcetype: "configmap"
+      resourcename: "myresource2"
+      mountdirectory: "directory2"
+      envname : "name2"
