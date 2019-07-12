@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 class KubernetesFlinkClusterDeployer(client: KubernetesClient, entityName: String, prefix: String) {
 
   private val log = LoggerFactory.getLogger(classOf[KubernetesFlinkClusterDeployer].getName)
-  log.info(s"Creating KubernetesFlinkClusterDeployer for the entity name $entityName, prefix$prefix")
+//  log.info(s"Creating KubernetesFlinkClusterDeployer for the entity name $entityName, prefix $prefix")
 
   def getResourceList(cluster: FlinkCluster, namespace: String, options: DeploymentOptions): KubernetesResourceList[_ <: HasMetadata] = client.synchronized {
 

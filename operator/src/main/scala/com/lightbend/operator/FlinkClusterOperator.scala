@@ -3,11 +3,10 @@ package com.lightbend.operator
 
 import com.lightbend.operator.types.FlinkCluster
 import io.radanalytics.operator.common.{AbstractOperator, EntityInfo, Operator}
-import org.slf4j.LoggerFactory
 import Constants._
-import com.fasterxml.jackson.databind.ObjectMapper
-import io.radanalytics.operator.common.crd.InfoClass
+import com.lightbend.operator.GetClusterStatus.getStatus
 import io.radanalytics.operator.resource.LabelsHelper._
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.{Map => MMap}
 import scala.collection.JavaConverters._
@@ -76,17 +75,6 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     }
   }
 
-  override protected def convertCr (info : InfoClass[_]): FlinkCluster = {
-    log.info(s"Converting new resource - source $info")
-    val name = info.getMetadata.getName
-    val namespace = info.getMetadata.getNamespace
-    val mapper = new ObjectMapper
-    var infoSpec = mapper.convertValue(info.getSpec, classOf[FlinkCluster])
-    if (infoSpec.getName == null) infoSpec.setName(name)
-    if (infoSpec.getNamespace == null) infoSpec.setNamespace(namespace)
-    infoSpec
-  }
-
   override protected def fullReconciliation() : Unit = {
     //        1. get all defined crd and call it desiredSet
     //        2. get all deployed clusters and call it actualSet (and update the this.clusters)
@@ -94,7 +82,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
     //        4. actualSet - desiredSet = toBeDeleted
     //        5. repair / scale
 
-    log.info(s"Running full reconciliation for namespace $namespace and kind $entityName..")
+    log.info(s"Running full reconciliation for namespace $namespace and kind $entityName.")
 
     var change = false
     // Get desired clusters
@@ -134,7 +122,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
 
     // repair/ rescale
     desired.foreach(cluster => {
-      val state = actual.get(cluster._1).getOrElse(Deployed(-1, -1, ""))
+      val state = actual.get(cluster._1).getOrElse(Deployed("", -1, -1, ""))
       var deployment = DeploymentOptions(false, false, false)
       state.master match {
         case actualMasters if (actualMasters > 0) => // may be rescale
@@ -162,8 +150,10 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
 
       state.service match {
         case "" => deployment = DeploymentOptions(deployment.master, deployment.worker, true)
-        case _ =>  // log.info(s"Job manager service ${state.service}")
-
+        case _ =>  // Service exists - get status for this deployment
+          val status = getStatus(state.service)
+          log.info(s"Status for cluster ${state.name} - ${status.status}, service ${state.service}")
+          status.jobs.foreach(job => log.info(s"Job ${job.id} - ${job.status}"))
       }
 
       deployment.todo() match {
@@ -216,7 +206,7 @@ class FlinkClusterOperator extends AbstractOperator[FlinkCluster] {
       FullName(s.getMetadata.getLabels.get(prefix + entityName), s.getMetadata.getNamespace) -> s"${s.getMetadata.getName}.${s.getMetadata.getNamespace}.svc.cluster.local").toMap
     // Combine to cluster information
     masters.keys.toSeq.union(workers.keys.toSeq).union(mservices.keys.toSeq)
-      .map(key => (key -> Deployed(
+      .map(key => (key -> Deployed(s"${key.namespace}:${key.name}",
           workers.get(key) match {case Some(w) => w; case _ => -1},
           masters.get(key) match {case Some(m) => m; case _ => -1 },
           mservices.get(key) match {case Some(s) => s; case _ => ""}
@@ -285,4 +275,4 @@ case class DeploymentOptions(master: Boolean = true, worker : Boolean = true, se
   def todo() : Boolean = master || worker || service
 }
 
-case class Deployed(worker : Int, master: Int, service: String)
+case class Deployed(name : String, worker : Int, master: Int, service: String)
